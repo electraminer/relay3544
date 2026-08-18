@@ -1,0 +1,335 @@
+.app {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  gap: 16px;
+}
+
+.relay {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 16px;
+  flex:1;
+}
+
+.editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.msgeditor {
+  flex: 2;
+}
+
+.dictionary {
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 16px;
+}
+
+.dictionary-rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dictionary-row {
+  display: flex;
+  gap: 6px;
+}
+
+.dictionary-signal,
+.dictionary-token {
+  background: black;
+  color: white;
+  border: 1px solid #666666;
+  font-family: Monocraft, monospace;
+  font-size: 16px;
+  padding: 6px;
+  min-width: 0;
+}
+
+.dictionary-signal {
+  width: 88px;
+  flex: none;
+}
+
+.dictionary-token {
+  flex: 1;
+}
+
+.dictionary-signal:focus,
+.dictionary-token:focus {
+  outline: none;
+  border-color: white;
+}
+
+.dictionary-remove {
+  flex: none;
+  padding: 0 4px 0 8px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  background: white;
+  color: black;
+  border: 1px solid #333333;
+  font-family: Monocraft, monospace;
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button:hover {
+  border-color: #666666;
+}
+
+button:active {
+  border-color: white;
+}
+
+button:disabled {
+  background-color: #666666;
+}
+
+.field {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.textbox {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.backdrop,
+textarea {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  font-family: Monocraft, monospace;
+  font-size: 24px;
+  line-height: 1;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: auto;
+}
+
+.backdrop {
+  background: black;
+  color: white;
+  pointer-events: none;
+}
+
+.highlights mark {
+  color: #ff5555;
+  background: rgba(255, 85, 85, 0.25);
+  border-radius: 2px;
+}
+
+textarea {
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: white;
+  border-color: #666666;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: white;
+}
+
+textarea.invalid {
+  border-color: #ff5555;
+}
+
+.error-bar {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #1a0000;
+  color: #ff5555;
+  font-family: Monocraft, monospace;
+  font-size: 16px;
+  border: 1px solid #ff5555;
+  border-radius: 2px;
+  overflow-wrap: break-word;
+}
+
+.importerr-bar {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #00001a;
+  color: #5555ff;
+  font-family: Monocraft, monospace;
+  font-size: 16px;
+  border: 1px solid #5555ff;
+  border-radius: 2px;
+  overflow-wrap: break-word;
+}
+
+.importsucc-bar {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #001a00;
+  color: #55ff55;
+  font-family: Monocraft, monospace;
+  font-size: 16px;
+  border: 1px solid #55ff55;
+  border-radius: 2px;
+  overflow-wrap: break-word;
+}
+
+.output-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.output-code {
+  flex: 1;
+  min-width: 0;
+  background: black;
+  color: white;
+  border: 1px solid #666666;
+  font-family: Monocraft, monospace;
+  font-size: 24px;
+  padding: 0 10px;
+  letter-spacing: 0.1em;
+}
+
+.output-code:focus {
+  outline: none;
+  border-color: white;
+}
+
+.headbutton {
+  flex: 1;
+}
+
+.headbutton button {
+  width: 100%;
+}
+
+.chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: black;
+  color: white;
+  border: 1px solid #666666;
+  padding: 10px;
+  font-family: Monocraft, monospace;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.message {
+  display: flex;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.message--secret {
+  color: #666666;
+}
+
+.message--command {
+  color: #666600;
+}
+
+.message-time {
+  flex: none;
+  padding-left: 2px;
+  color: #666666;
+}
+
+.message--self .message-time {
+  background-color: #666666;
+  color: black;
+}
+
+.sender {
+  flex: none;
+  height: 20px;
+  width: 41px;
+  font-size: 16px;
+}
+
+.tooltip-line {
+  display: block;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.tooltip-wrap {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  top: calc(100%);
+  right: 0;
+  width: max-content;
+  background: black;
+  color: white;
+  border: 1px solid #666666;
+  padding: 0px 4px;
+  font-family: Monocraft, monospace;
+  font-size: 16px;
+  line-height: 1.25;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease,
+    visibility 0.1s;
+  z-index: 10;
+}
+
+.tooltip-wrap:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.tooltip-title {
+  color: #666666;
+  letter-spacing: 0.05em;
+}
+
+.tooltip-empty {
+  color: #666666;
+}
