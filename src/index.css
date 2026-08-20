@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Monocraft";
+  src: url("/fonts/Monocraft.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   background: #0a0a0a;
@@ -17,4 +23,32 @@ body,
 
 body {
   background: #0a0a0a;
+}
+
+button {
+  background: white;
+  color: black;
+  border: 1px solid #333333;
+  font-family: Monocraft, monospace;
+  font-size: 27px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button:hover {
+  border-color: #666666;
+}
+
+button:active {
+  border-color: white;
+}
+
+button:disabled {
+  background-color: #666666;
 }

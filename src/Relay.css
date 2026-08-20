@@ -1,0 +1,282 @@
+.editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.msgeditor {
+  flex: 2;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.field {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.textbox {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.backdrop,
+textarea {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  font-family: Monocraft, monospace;
+  font-size: 27px;
+  line-height: 1;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: auto;
+}
+
+.backdrop {
+  background: black;
+  color: white;
+  pointer-events: none;
+}
+
+.highlights mark {
+  color: #ff5555;
+  background: rgba(255, 85, 85, 0.25);
+  border-radius: 2px;
+}
+
+textarea {
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: white;
+  border-color: #666666;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: white;
+}
+
+textarea.invalid {
+  border-color: #ff5555;
+}
+
+.error-bar {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #1a0000;
+  color: #ff5555;
+  font-family: Monocraft, monospace;
+  font-size: 18px;
+  border: 1px solid #ff5555;
+  border-radius: 2px;
+  overflow-wrap: break-word;
+}
+
+.importerr-bar {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #00001a;
+  color: #5555ff;
+  font-family: Monocraft, monospace;
+  font-size: 18px;
+  border: 1px solid #5555ff;
+  border-radius: 2px;
+  overflow-wrap: break-word;
+}
+
+.importsucc-bar {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #001a00;
+  color: #55ff55;
+  font-family: Monocraft, monospace;
+  font-size: 18px;
+  border: 1px solid #55ff55;
+  border-radius: 2px;
+  overflow-wrap: break-word;
+}
+
+.output-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.output-code {
+  flex: 1;
+  min-width: 0;
+  background: black;
+  color: white;
+  border: 1px solid #666666;
+  font-family: Monocraft, monospace;
+  font-size: 27px;
+  padding: 0 10px;
+  letter-spacing: 0.1em;
+  width: 0;
+}
+
+.output-code:focus {
+  outline: none;
+  border-color: white;
+}
+
+.headbutton {
+  width: 33.33%
+}
+
+.headbutton button {
+  width: 100%;
+}
+
+.chat-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: black;
+  color: white;
+  border: 1px solid #666666;
+  padding: 10px;
+  font-family: Monocraft, monospace;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.scroll-to-bottom {
+  position: absolute;
+  top: 10px;
+  right: 25px;
+  flex: none;
+  width: auto;
+  font-size: 18px;
+  padding: 4px 12px;
+  z-index: 10;
+}
+
+.message {
+  display: flex;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.message--secret {
+  color: #666666;
+}
+
+.message--command {
+  color: #666600;
+}
+
+.message--image {
+  color: #AAAAFF;
+}
+
+.message-time {
+  flex: none;
+  padding-left: 2px;
+  color: #666666;
+}
+
+.message--self .message-time {
+  background-color: #666666;
+  color: black;
+}
+
+.sender {
+  flex: none;
+  height: 20px;
+  width: 48px;
+  font-size: 18px;
+}
+
+.tooltip-line {
+  display: block;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.tooltip-wrap {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  top: calc(100%);
+  right: 0;
+  width: max-content;
+  background: black;
+  color: white;
+  border: 1px solid #666666;
+  padding: 0px 4px;
+  font-family: Monocraft, monospace;
+  font-size: 18px;
+  line-height: 1.25;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease,
+    visibility 0.1s;
+  z-index: 10;
+}
+
+.tooltip-wrap:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.tooltip-title {
+  color: #666666;
+  letter-spacing: 0.05em;
+}
+
+.tooltip-empty {
+  color: #666666;
+}
+
+.message-viewimage {
+  cursor: pointer;
+  background-color: #AAAAFF;
+  color: black;
+  width: 21px;
+  padding-left: 4px;
+  border-radius: 4px;
+}
+
+.social {
+  padding: 0;
+  aspect-ratio: 1/1;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  flex-grow: 0;
+  flex-shrink: 0;
+  background-color: transparent;
+  border: none;
+}
