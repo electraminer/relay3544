@@ -1,3 +1,4 @@
+import type { Pixel } from "./Image";
 
 export interface Message {
   // When the message was recieved.
@@ -10,6 +11,8 @@ export interface Message {
   signals: number[];
   // Tags of the message added by post processing
   tags: string[];
+  // Image of the message added by post processing
+  image?: Pixel[];
 }
 
 /**
@@ -83,9 +86,65 @@ export function processEdits(messages: Message[]) {
   return processed;
 }
 
+export function processImage(signals: number[]): [Pixel[], number, number] | undefined {
+  // Look for image
+  const imageStart = signals.findIndex(signal => signal === -53);
+  if (imageStart < 0) return;
+  if (signals[imageStart + 1] !== -14) return;
+  let i = imageStart + 2;
+  const image: Pixel[] = [];
+  while (signals[i] !== -15) {
+    // Pixel
+    if (signals[i++] !== -52) return;
+    const pixel = [];
+    for (let n = 0; n < 5; n++) {
+      let sign = 1;
+      let number = 0;
+      let precision = 1;
+      if (signals[i] === -1) {
+        sign = -1;
+        i++;
+      }
+      while (signals[i] >= 0) {
+        const digit = signals[i];
+        number *= Math.pow(10, digit.toString().length)
+        number += digit;
+        i++;
+      }
+      if (signals[i] === -10) {
+        i++;
+        while (signals[i] >= 0) {
+          const digit = signals[i];
+          precision /= Math.pow(10, digit.toString().length)
+          number += precision * digit;
+          i++;
+        }
+      }
+      if (signals[i] === -3) {
+        i++;
+      }
+      pixel.push(number * sign);
+    }
+    image.push({x: pixel[0], y: pixel[1], z: pixel[2], size: pixel[3], color: pixel[4]});
+  }
+  return [image, imageStart, i];
+}
+
+export function processImages(messages: Message[]): Message[] {
+  return messages
+    .map(m => {
+      const imageResult = processImage(m.signals);
+      if (!imageResult) return m;
+      const [image, start, end] = imageResult;
+      const cutImage = [...m.signals.slice(0, start + 2), -25, ...m.signals.slice(end)];
+
+      return {...m, signals: cutImage, tags: [...m.tags, "image"], image}
+    });
+}
+
 export function filterSecrets(messages: Message[], secrets: Set<number>) {
   return messages
-    .filter(m => m.signals[0] !== -65535 || secrets.has(m.signals[1]))
+    .filter(m => m.signals[0] !== -65535 || secrets.has(m.signals[1]) || secrets.has(-65536))
     .map(m => m.signals[0] !== -65535 ? m : {
       ...m, tags: [...m.tags, "secret"]
     });

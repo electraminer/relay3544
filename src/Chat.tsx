@@ -1,37 +1,112 @@
-import { Fragment } from "react/jsx-runtime";
-import { filterSecrets, processEdits, type Message } from "./Message";
-import type { Ref } from "react";
+import { Fragment, useLayoutEffect, useRef, useState } from "react";
+import { filterSecrets, processEdits, processImages, type Message } from "./Message";
+import type { Pixel } from "./Image";
+import type { DictEntry } from "./Dictionary";
+
+const INITIAL_MESSAGE_COUNT = 64;
+const LOAD_STEP = 64;
+const SCROLL_EDGE_THRESHOLD = 40;
 
 export function Chat(props: {
   messages: Message[],
-  dictionary: Map<number, string>,
+  dictionary: Map<number, DictEntry>,
   self: number,
   secrets: Set<number>,
   online: Set<number>,
-  chatRef: Ref<HTMLDivElement>,
   onSelectSignal: (signal: number) => void,
+  onViewImage: (image: Pixel[]) => void,
 }) {
-  const recent = props.messages.slice(-64);
-  const filtered = filterSecrets(recent, props.secrets);
-  const processed = processEdits(filtered);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_MESSAGE_COUNT);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const restoreScrollRef = useRef<{ height: number, top: number } | null>(null);
+  const pendingBottomRef = useRef(false);
 
-  return <div className="chat" ref={props.chatRef}>
-    {processed.map((message) => <Message
-      message={message}
-      dictionary={props.dictionary}
-      self={props.self}
-      online={props.online}
-      onSelectSignal={() => []}
-    />)}
+  const filtered = filterSecrets(props.messages, props.secrets);
+  const total = filtered.length;
+  const [readCount, setReadCount] = useState(total);
+  const unread = total - readCount;
+  const recent = filtered.slice(-visibleCount);
+  const processed = processEdits(recent);
+  const withImages = processImages(processed);
+
+  const isScrolling = visibleCount > INITIAL_MESSAGE_COUNT;
+
+  // When more (older) messages are prepended, keep the previously-visible
+  // content in place instead of letting the scroll position jump. When the
+  // "scroll to bottom" button was clicked, jump straight to the bottom.
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (pendingBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+      pendingBottomRef.current = false;
+      return;
+    }
+    const restore = restoreScrollRef.current;
+    if (restore) {
+      el.scrollTop = el.scrollHeight - restore.height + restore.top;
+      restoreScrollRef.current = null;
+    }
+  }, [visibleCount]);
+
+  // Autoscroll to the newest message, but only while no extra history has
+  // been lazy-loaded — otherwise a new message would yank the view away
+  // from whatever the user scrolled up to read.
+  useLayoutEffect(() => {
+    if (isScrolling) return;
+    const el = containerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+    setReadCount(total);
+  }, [total, props.secrets]);
+
+  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    if (el.scrollTop <= SCROLL_EDGE_THRESHOLD && visibleCount < total) {
+      restoreScrollRef.current = { height: el.scrollHeight, top: el.scrollTop };
+      setVisibleCount(count => Math.min(count + LOAD_STEP, total));
+    } else if (
+      el.scrollHeight - el.scrollTop - el.clientHeight <= SCROLL_EDGE_THRESHOLD
+      && visibleCount > INITIAL_MESSAGE_COUNT
+    ) {
+      setVisibleCount(INITIAL_MESSAGE_COUNT);
+    }
+  }
+
+  function handleScrollToBottom() {
+    pendingBottomRef.current = true;
+    setVisibleCount(INITIAL_MESSAGE_COUNT);
+  }
+
+  return <div className="chat-wrap">
+    <div
+      className="chat"
+      ref={containerRef}
+      onScroll={handleScroll}
+    >
+      {withImages.map((message) => <Message
+        message={message}
+        dictionary={props.dictionary}
+        self={props.self}
+        online={props.online}
+        onSelectSignal={props.onSelectSignal}
+        onViewImage={props.onViewImage}
+      />)}
+    </div>
+    {isScrolling && (
+      <button className="scroll-to-bottom" onClick={handleScrollToBottom}>
+        ↓ {unread}
+      </button>
+    )}
   </div>
 }
 
 export function Message(props: {
   message: Message,
-  dictionary: Map<number, string>,
+  dictionary: Map<number, DictEntry>,
   online: Set<number>,
   self: number,
   onSelectSignal: (signal: number) => void,
+  onViewImage: (image: Pixel[]) => void,
 }): React.ReactNode {
   return <div className={`message
       ${props.message.tags.map(t => `message--${t}`).join(" ")}
@@ -45,6 +120,9 @@ export function Message(props: {
       online={props.online}
       onSelectSignal={props.onSelectSignal}
       />
+    {props.message.image && <span className="message-viewimage"
+      onClick={() => props.onViewImage(props.message.image!)}
+    >⏼</span>}
   </div>
 }
 
@@ -65,7 +143,7 @@ export function Sender(props: {
 
 export function Text(props: {
   signals: number[],
-  dictionary: Map<number, string>,
+  dictionary: Map<number, DictEntry>,
   online: Set<number>,
   onSelectSignal: (signal: number) => void,
 }): React.ReactNode {
@@ -75,17 +153,24 @@ export function Text(props: {
         {props.online.has(signal) ?
           <Sender sender={signal}/>
         :
-          <span className="text-signal">{props.dictionary.get(signal) ?? signal}</span>
+          <span className="text-signal">{props.dictionary.get(signal)?.def ?? signal}</span>
         }
         <div className="tooltip">{signal}</div>
       </span>
-      {i < props.signals.length && separator(signal, props.signals[i+1])}
+      {i < props.signals.length && separator(signal, props.signals[i+1], props.dictionary)}
+      {i > 0 && signal === props.signals[i-1] && <span>{props.dictionary.get(signal)?.double}</span>}
     </Fragment>
   )}
   </span>;
 }
 
-export function separator(signal1: number, signal2: number) {
+export function separator(signal1: number, signal2: number, dictionary: Map<number, DictEntry>) {
+  let after = dictionary.get(signal1)?.after ?? " ";
+  if (signal1 >= 0) after = "";
+  let before = dictionary.get(signal2)?.before ?? " ";
+  if (signal2 >= 0) before = "";
+  let sep = after + before;
+  if (after === before) sep = after;
   // TODO add more advanced separation rules like in the game
-  return <span> </span>;
+  return <span>{sep}</span>;
 }

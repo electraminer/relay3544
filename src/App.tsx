@@ -1,16 +1,15 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   compile,
   decompile,
   CompileError,
   MultiCompileError,
-  DEFAULT_DICTIONARY,
-  type Dictionary,
-  type DictionaryEntry,
 } from './converter';
 import './App.css';
 import { Chat, Sender } from './Chat';
 import type { Message } from './Message';
+import { Image, type Pixel } from './Image';
+import { Dictionary, type DictEntry } from './Dictionary';
 
 function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
   const ranges = errors.filter((e) => e.end > e.start).sort((a, b) => a.start - b.start);
@@ -27,111 +26,7 @@ function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
   return parts;
 }
 
-interface DictRow {
-  id: number;
-  signal: string;
-  token: string;
-}
-
-let nextRowId = 0;
-
-const STORAGE_KEY = 'message-compiler-dictionary';
-
-function seedRows(): DictRow[] {
-  return DEFAULT_DICTIONARY.map(([signal, token]) => ({ id: nextRowId++, signal: String(signal), token }));
-}
-
-function loadRows(): DictRow[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return seedRows();
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return seedRows();
-
-    return parsed.map((row) => ({
-      id: nextRowId++,
-      signal: typeof row?.signal === 'string' ? row.signal : '',
-      token: typeof row?.token === 'string' ? row.token : '',
-    }));
-  } catch {
-    return seedRows();
-  }
-}
-
-function toDictionary(rows: DictRow[]): Dictionary {
-  const entries: DictionaryEntry[] = [];
-  for (const row of rows) {
-    const signal = Number(row.signal);
-    if (row.token === '' || !Number.isFinite(signal)) continue;
-    entries.push([signal, row.token]);
-  }
-  return entries;
-}
-
-function sortRows(rows: DictRow[]): DictRow[] {
-  return [...rows].sort((a, b) => {
-    const an = Number(a.signal);
-    const bn = Number(b.signal);
-    const aValid = a.signal !== '' && Number.isFinite(an);
-    const bValid = b.signal !== '' && Number.isFinite(bn);
-    if (aValid && bValid) return bn - an;
-    if (aValid) return -1;
-    if (bValid) return 1;
-    return 0;
-  });
-}
-
-function DictionaryPanel({ rows, onChange }: { rows: DictRow[]; onChange: (rows: DictRow[]) => void }) {
-  function updateRow(id: number, field: 'signal' | 'token', text: string) {
-    onChange(rows.map((row, i) => (i === id ? { ...row, [field]: text } : row)));
-  }
-
-  function removeRow(id: number) {
-    onChange(rows.filter((_, i) => i !== id));
-  }
-
-  function addRow() {
-    onChange([...rows, { id: nextRowId++, signal: '', token: '' }]);
-  }
-
-  return (
-    <div className="dictionary">
-      <div className="toolbar">
-        <button onClick={addRow}>+ Add</button>
-        <button onClick={() => onChange(sortRows(rows))}>Sort</button>
-      </div>
-      <div className="dictionary-rows">
-        {rows.map((row, i) => (
-          <div className="dictionary-row" key={i}>
-            <input
-              className="dictionary-signal"
-              placeholder="signal"
-              inputMode="numeric"
-              spellCheck={false}
-              autoComplete="off"
-              value={row.signal}
-              onChange={(e) => updateRow(i, 'signal', e.target.value)}
-            />
-            <input
-              className="dictionary-token"
-              placeholder="token"
-              spellCheck={false}
-              autoComplete="off"
-              value={row.token}
-              onChange={(e) => updateRow(i, 'token', e.target.value)}
-            />
-            <button className="dictionary-remove" onClick={() => removeRow(i)}>
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Editor({ dictionary, onSend }: { dictionary: Map<number, string>, onSend: (msg: string) => void}) {
+function Editor({ dictionary, onSend }: { dictionary: Map<number, DictEntry>, onSend: (msg: string) => void}) {
   const [value, setValue] = useState('');
   const [compiled, setCompiled] = useState('');
   const [importErrors, setImportErrors] = useState<CompileError[]>([]);
@@ -174,7 +69,8 @@ function Editor({ dictionary, onSend }: { dictionary: Map<number, string>, onSen
     }
 
     try {
-      const next = decompile(clipboardText, dictionary);
+      const compiled = compile(clipboardText, dictionary);
+      const next = decompile(compiled, dictionary);
       handleChange(next);
       setImportErrors([]);
       setImportSuccess([new CompileError('Imported!', 0, 0)]);
@@ -234,13 +130,6 @@ function Editor({ dictionary, onSend }: { dictionary: Map<number, string>, onSen
             onKeyDown={handleKeyDown}
           />
         </div>
-        {compileErrors.length > 0 && (
-          <div className="error-bar">
-            {compileErrors.map((err, i) => (
-              <div key={i}>{err.message}</div>
-            ))}
-          </div>
-        )}
         {importErrors.length > 0 && (
           <div className="importerr-bar">
             {importErrors.map((err, i) => (
@@ -262,8 +151,9 @@ function Editor({ dictionary, onSend }: { dictionary: Map<number, string>, onSen
 
 const SOCKET_URL = 'wss://dscr-relay.dixonary.co.uk/';
 const CODE_STORAGE_KEY = 'message-compiler-socket-code';
-const DEFAULT_CODE = '3544';
+const DEFAULT_CODE = new Array(4).fill(0).map(_ => Math.floor(Math.random() * 8)).join("");
 const MESSAGES_STORAGE_KEY = 'relay-messages';
+const SECRETS_STORAGE_KEY = 'relay-secrets';
 
 type SocketStatus = 'connecting' | 'open' | 'closed';
 
@@ -284,6 +174,19 @@ function loadMessages(): Message[] {
   }
 }
 
+function loadSecrets(): Set<number> {
+  try {
+    const raw = localStorage.getItem(SECRETS_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed);
+  } catch (e) {
+    console.log("load error", e);
+    return new Set();
+  }
+}
+
 function loadCode(): string {
   try {
     const raw = localStorage.getItem(CODE_STORAGE_KEY);
@@ -299,13 +202,17 @@ function handshakeFor(code: string): string | null {
   return `S,${parseInt(code, 8)}`;
 }
 
-function SocketOutput({dictionary, setOnSend}: {dictionary: Map<number, string>, setOnSend: (onSend: (msg: string) => void) => void}) {
+function SocketOutput({dictionary, setOnSend, onImage, onDefine}:
+  {dictionary: Map<number, DictEntry>
+     setOnSend: (onSend: (msg: string) => void) => void,
+     onImage: (image: Pixel[]) => void,
+    onDefine: (signal: number) => void,
+  }) {
   const [status, setStatus] = useState<SocketStatus>('connecting');
   const [messages, setMessages] = useState<Message[]>(loadMessages);
   const [code, setCode] = useState<string>(loadCode);
   const [connectedCode, setConnectedCode] = useState<number | null>(null);
-  const [secrets, setSecrets] = useState<Set<number>>(new Set());
-  const listRef = useRef<HTMLDivElement>(null);
+  const [secrets, setSecrets] = useState<Set<number>>(loadSecrets);
   const socketRef = useRef<WebSocket | null>(null);
 
   const [online, setOnline] = useState<number[]>([]);
@@ -363,7 +270,6 @@ function SocketOutput({dictionary, setOnSend}: {dictionary: Map<number, string>,
       }
       // Send
       const message = `M,${msg.replaceAll(" ",",")}`;
-      console.log("SENDING", msg.replaceAll(" ",","));
       ws.send(message);
     })
 
@@ -378,16 +284,14 @@ function SocketOutput({dictionary, setOnSend}: {dictionary: Map<number, string>,
   }, [messages]);
 
   useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
-  }, [messages]);
+    localStorage.setItem(SECRETS_STORAGE_KEY, JSON.stringify([...secrets]));
+  }, [secrets]);
 
-  function handleCodeChange(next: string) {
-    if (!isOctalCode(next)) return;
-    setCode(next);
-    localStorage.setItem(CODE_STORAGE_KEY, next);
-  }
+  useEffect(() => {
+    if (!isOctalCode(code)) return;
+    setCode(code);
+    localStorage.setItem(CODE_STORAGE_KEY, code);
+  }, [code]);
 
   function handleSend() {
     const ws = socketRef.current;
@@ -407,11 +311,11 @@ function SocketOutput({dictionary, setOnSend}: {dictionary: Map<number, string>,
           autoComplete="off"
           maxLength={4}
           value={code}
-          onChange={(e) => handleCodeChange(e.target.value)}
+          onChange={(e) => setCode(e.target.value)}
         />
         <div className="tooltip-wrap headbutton">
           <button
-            disabled={status !== 'open' || code.length !== 4 || parseInt(code) === connectedCode}
+            disabled={status !== 'open' || code.length !== 4}
             onClick={handleSend}
           >
             {parseInt(code) === connectedCode ? `${online.length} online` : `connect`}
@@ -451,8 +355,8 @@ function SocketOutput({dictionary, setOnSend}: {dictionary: Map<number, string>,
           secrets={secrets}
           dictionary={dictionary}
           online={new Set(online)}
-          onSelectSignal={() => []}
-          chatRef={listRef}
+          onSelectSignal={onDefine}
+          onViewImage={onImage}
           />
       </div>
     </div>
@@ -460,28 +364,22 @@ function SocketOutput({dictionary, setOnSend}: {dictionary: Map<number, string>,
 }
 
 function App() {
-  const [rows, setRows] = useState<DictRow[]>(loadRows);
-  const dictionary = useMemo(() => toDictionary(rows), [rows]);
+  const [image, setImage] = useState<Pixel[]>([]);
 
-  const dictMap = new Map<number, string>();
-  for (const entry of dictionary) {
-    dictMap.set(entry[0], entry[1]);
-  }
-
-  useEffect(() => {
-    const stored = rows.map(({ signal, token }) => ({ signal, token }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-  }, [rows]);
+  const [dictMap, setDict] = useState<Map<number, DictEntry>>(new Map());
+  const [onDefine, setOnDefine] = useState<(signal: number) => void>(() => {});
 
   const [onSend, setOnSend] = useState<(msg: string) => void>(() => {});
-
   return (
     <div className="app">
-      <DictionaryPanel rows={rows} onChange={setRows} />
+      <Dictionary onChangeDict={setDict} setOnDefine={onDefine => setOnDefine(() => onDefine)}/>
       <div className="relay">
-        <SocketOutput dictionary={dictMap} setOnSend={onSend => setOnSend(() => onSend)}/>
+        <SocketOutput
+          dictionary={dictMap} setOnSend={onSend => setOnSend(() => onSend)}
+          onImage={setImage} onDefine={onDefine}/>
         <Editor dictionary={dictMap} onSend={onSend}/>
       </div>
+      <Image image={image} dictionary={dictMap} />
     </div>
   );
 }
