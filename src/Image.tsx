@@ -79,14 +79,17 @@ export function ImageViewer(props: {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-    const pointLight = new THREE.PointLight(0xffffff, 1.2);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    keyLight.position.set(5, 8, 6);
+    scene.add(keyLight);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.25);
+    fillLight.position.set(-6, -2, -4);
+    scene.add(fillLight);
 
     const geometry = new THREE.SphereGeometry(0.7, 32, 32);
     const spheres = image.map(pixel => {
-      const material = new THREE.MeshStandardMaterial({ color: getColor(pixel.color) });
+      const material = new THREE.MeshStandardMaterial({ color: getColor(pixel.color), roughness: 0.6 });
       const sphere = new THREE.Mesh(geometry, material);
       sphere.position.set(pixel.x, pixel.z, -pixel.y);
       sphere.scale.set(pixel.size/Math.sqrt(2), pixel.size/Math.sqrt(2), pixel.size/Math.sqrt(2));
