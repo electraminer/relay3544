@@ -270,7 +270,7 @@ textarea.invalid {
 .sender {
   flex: none;
   height: 20px;
-  width: 41px;
+  width: 48px;
   font-size: 18px;
 }
 
@@ -330,7 +330,7 @@ textarea.invalid {
   cursor: pointer;
   background-color: #AAAAFF;
   color: black;
-  width: 20px;
+  width: 21px;
   padding-left: 4px;
   border-radius: 4px;
 }
