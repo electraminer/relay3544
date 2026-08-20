@@ -11,7 +11,7 @@
   min-height: 0;
 
   display: grid;
-  grid-template-columns: 80px 2fr 20px;
+  grid-template-columns: 88px 2fr 20px;
   grid-auto-rows: 20px;
   overflow-y: scroll;
   scrollbar-width: thin;
@@ -21,7 +21,7 @@
 .dict-editor-cell {
   min-width: 0;
   font-family: Monocraft;
-  font-size: 16px;
+  font-size: 18px;
   background: black;
   border: 1px solid #666666;
 }
@@ -35,7 +35,7 @@
 .dict-editor-header {
   min-width: 0;
   font-family: Monocraft;
-  font-size: 16px;
+  font-size: 18px;
   padding-left: 2px;
   background: #666666;
   border: 1px solid ;
@@ -60,7 +60,7 @@
 }
 
 .dict-editor-controls button {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .dict-editor-detail {
@@ -74,7 +74,7 @@
 }
 
 .dict-editor-format-label {
-  min-width: 80px;
+  min-width: 88px;
 }
 .dict-editor-format-choice {
   min-width: 20px;
@@ -85,7 +85,7 @@
   min-width: 0;
   width: 0;
   font-family: Monocraft;
-  font-size: 16px;
+  font-size: 18px;
   background: black;
   border: 1px solid #666666;
 }
@@ -94,7 +94,7 @@
   min-height: 100px;
   min-width: 0;
   width: 100%;
-  font-size: 16px;
+  font-size: 18px;
   background: black;
   border: 1px solid #666666;
   position: relative;

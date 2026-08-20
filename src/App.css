@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Monocraft";
+  src: url("/fonts/Monocraft.ttf") format("truetype");
+  font-display: swap;
+}
+
 .app {
   display: flex;
   flex-direction: row;
@@ -52,7 +58,7 @@ button {
   color: black;
   border: 1px solid #333333;
   font-family: Monocraft, monospace;
-  font-size: 24px;
+  font-size: 27px;
   letter-spacing: 0.05em;
   cursor: pointer;
   flex: 1;
@@ -97,7 +103,7 @@ textarea {
   box-sizing: border-box;
   border: 1px solid transparent;
   font-family: Monocraft, monospace;
-  font-size: 24px;
+  font-size: 27px;
   line-height: 1;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -139,7 +145,7 @@ textarea.invalid {
   background: #1a0000;
   color: #ff5555;
   font-family: Monocraft, monospace;
-  font-size: 16px;
+  font-size: 18px;
   border: 1px solid #ff5555;
   border-radius: 2px;
   overflow-wrap: break-word;
@@ -151,7 +157,7 @@ textarea.invalid {
   background: #00001a;
   color: #5555ff;
   font-family: Monocraft, monospace;
-  font-size: 16px;
+  font-size: 18px;
   border: 1px solid #5555ff;
   border-radius: 2px;
   overflow-wrap: break-word;
@@ -163,7 +169,7 @@ textarea.invalid {
   background: #001a00;
   color: #55ff55;
   font-family: Monocraft, monospace;
-  font-size: 16px;
+  font-size: 18px;
   border: 1px solid #55ff55;
   border-radius: 2px;
   overflow-wrap: break-word;
@@ -181,7 +187,7 @@ textarea.invalid {
   color: white;
   border: 1px solid #666666;
   font-family: Monocraft, monospace;
-  font-size: 24px;
+  font-size: 27px;
   padding: 0 10px;
   letter-spacing: 0.1em;
   width: 0;
@@ -217,7 +223,7 @@ textarea.invalid {
   border: 1px solid #666666;
   padding: 10px;
   font-family: Monocraft, monospace;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.25;
 }
 
@@ -227,7 +233,7 @@ textarea.invalid {
   right: 25px;
   flex: none;
   width: auto;
-  font-size: 16px;
+  font-size: 18px;
   padding: 4px 12px;
   z-index: 10;
 }
@@ -265,7 +271,7 @@ textarea.invalid {
   flex: none;
   height: 20px;
   width: 41px;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .tooltip-line {
@@ -293,7 +299,7 @@ textarea.invalid {
   border: 1px solid #666666;
   padding: 0px 4px;
   font-family: Monocraft, monospace;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.25;
   opacity: 0;
   visibility: hidden;
