@@ -187,12 +187,18 @@ function loadSecrets(): Set<number> {
   }
 }
 
+let alerted = false;
+
 function loadCode(): string {
   try {
     const raw = localStorage.getItem(CODE_STORAGE_KEY);
     if (raw && isOctalCode(raw)) return raw;
   } catch {
     // ignore
+  }
+  if (!alerted) { // Jank but it works
+    alert(`This page is a fan-made server for the game 'A Message from Deep Space'. It's highly recommended that you play that first, as it serves as a 'tutorial' for what you'll learn here (and is just a very good game!)`)
+    alerted = true;
   }
   return DEFAULT_CODE;
 }
@@ -303,6 +309,9 @@ function SocketOutput({dictionary, setOnSend, onImage, onDefine}:
   return (
     <div className="editor msgeditor">
       <div className="output-controls">
+        <a className='social' href='https://store.steampowered.com/app/4080030/The_Message_from_Deep_Space/'>
+          <img src='/Steam_icon_logo.svg'/>
+        </a>
         <input
           className="output-code"
           placeholder="0000"

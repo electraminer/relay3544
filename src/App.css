@@ -199,7 +199,7 @@ textarea.invalid {
 }
 
 .headbutton {
-  flex: 1;
+  width: 33.33%
 }
 
 .headbutton button {
@@ -333,4 +333,16 @@ textarea.invalid {
   width: 21px;
   padding-left: 4px;
   border-radius: 4px;
+}
+
+.social {
+  padding: 0;
+  aspect-ratio: 1/1;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  flex-grow: 0;
+  flex-shrink: 0;
+  background-color: transparent;
+  border: none;
 }
