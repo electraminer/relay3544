@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import {
-  Actions, BorderNode, DockLocation, Layout, Model,
-  type IJsonModel, type ILayoutApi, type ITabRenderValues, type TabNode,
+  Actions, BorderNode, DockLocation, Layout, Model, TabNode,
+  type IJsonModel, type ILayoutApi, type ITabRenderValues,
 } from 'flexlayout-react';
 import 'flexlayout-react/style/dark.css';
 import './App.css';
@@ -80,8 +80,18 @@ function loadLayoutJson(): IJsonModel {
   return layoutJson;
 }
 
+function getOpenChannels(model: Model): number[] {
+  const channels: number[] = [];
+  model.visitNodes(node => {
+    if (!(node instanceof TabNode) || node.getComponent() !== 'chat') return;
+    const channel = (node.getConfig() as ChatTabConfig)?.channel;
+    if (channel !== null && channel !== undefined) channels.push(channel);
+  });
+  return channels;
+}
+
 function App() {
-  const [{model, dictBorderId, imageBorderId, dictOpen: initialDictOpen, imageOpen: initialImageOpen}] = useState(() => {
+  const [{model, dictBorderId, imageBorderId, dictOpen: initialDictOpen, imageOpen: initialImageOpen, openChannels: initialOpenChannels}] = useState(() => {
     let model: Model;
     try {
       model = Model.fromJson(loadLayoutJson());
@@ -104,18 +114,20 @@ function App() {
         imageOpen = node.getSelected() !== -1;
       }
     });
-    return { model, dictBorderId, imageBorderId, dictOpen, imageOpen };
+    return { model, dictBorderId, imageBorderId, dictOpen, imageOpen, openChannels: getOpenChannels(model) };
   });
   const [image, setImage] = useState<Pixel[]>([]);
   const [dictMap, setDict] = useState<Map<number, DictEntry>>(new Map());
   const dictionaryRef = useRef<DictionaryHandle>(null);
   const layoutRef = useRef<ILayoutApi>(null);
-  const relay = useRelaySocket();
   const [dictOpen, setDictOpen] = useState(initialDictOpen);
   const [imageOpen, setImageOpen] = useState(initialImageOpen);
+  const [openChannels, setOpenChannels] = useState(initialOpenChannels);
+  const relay = useRelaySocket(openChannels);
 
   function onModelChange(model: Model) {
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(model.toJson()));
+    setOpenChannels(getOpenChannels(model));
   }
 
   function toggleBorder(id: string, isOpen: boolean, setOpen: (open: boolean) => void) {

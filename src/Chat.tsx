@@ -116,8 +116,15 @@ export function Message(props: {
       ${props.message.tags.map(t => `message--${t}`).join(" ")}
       ${props.message.sender === props.self && "message--self"}
   `}>
-    <span className="message-time">{props.message.id.toString().padStart(3, "0")}</span>
-    <Sender sender={props.message.sender}/>
+    <TooltipWrap
+      tooltip={new Date(props.message.receivedAt)
+        .toLocaleString()}>
+      <span className="message-time">{props.message.id.toString().padStart(3, "0")}</span>
+    </TooltipWrap>
+    <TooltipWrap onClick={() => props.onSelectSignal(props.message.sender)}
+      tooltip={props.message.sender}>
+      <Sender sender={props.message.sender}/>
+    </TooltipWrap>
     <Text
       signals={props.message.signals}
       dictionary={props.dictionary}

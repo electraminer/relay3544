@@ -33,7 +33,7 @@ export interface Relay {
 }
 
 
-export function useRelaySocket(): Relay {
+export function useRelaySocket(openChannels: number[]): Relay {
   const socketRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<SocketStatus>("connecting");
 
@@ -49,17 +49,22 @@ export function useRelaySocket(): Relay {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
+  const openChannelsRef = useRef(openChannels);
+  useEffect(() => {
+    openChannelsRef.current = openChannels;
+  }, [openChannels]);
+
 
   const [code, setCode] = useState<number>(() => loadCode());
   useEffect(() => {
     saveCode(code);
-    console.log(socketRef.current);
     socketRef.current?.send(`S,${codeToDecimal(code)}`);
   }, [code]);
 
   function join(newCode: number) {
     if (!isValidCode(newCode)) throw new Error("Invalid code");
     if (newCode !== code) {
+      console.log("join", newCode);
       setCode(newCode);
     }
   }
@@ -76,6 +81,7 @@ export function useRelaySocket(): Relay {
       ws.onopen = () => {
         attempt = 0;
         setStatus("joining");
+        console.log("joining send");
         socketRef.current?.send(`S,${codeToDecimal(code)}`);
       };
       ws.onclose = () => {
@@ -114,14 +120,18 @@ export function useRelaySocket(): Relay {
             receivedAt: Date.now(),
             tags: [],
           };
-          if (soundEnabledRef.current) {
-            playNotes(senderSong(message.sender));
-          }
+          const messageChannel = message.signals[0] === -65535 ? message.signals[1] : null;
+          const channelOpen = messageChannel === null || openChannelsRef.current.includes(messageChannel);
+          
           const recentMessages = messages.slice(-10);
           if (recentMessages.find(m =>
             m.id === message.id
             && m.sender === message.sender
             && m.signals.join(" ") === message.signals.join(" "))) return;
+
+          if (soundEnabledRef.current && channelOpen) {
+            playNotes(senderSong(message.sender));
+          }
           setMessages(m => [...m, message]);
         }
       };
@@ -135,7 +145,7 @@ export function useRelaySocket(): Relay {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, []);
+  }, [code]);
 
   function send(msg: number[]) {
     if (status === "readwrite") {
