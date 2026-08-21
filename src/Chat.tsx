@@ -1,7 +1,8 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { filterSecrets, processEdits, processImages, type Message } from "./Message";
+import { filterChannels, processEdits, processImages, type Message } from "./Message";
 import type { Pixel } from "./Image";
 import type { DictEntry } from "./Dictionary";
+import { TooltipWrap } from "./Tooltip";
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
@@ -11,7 +12,7 @@ export function Chat(props: {
   messages: Message[],
   dictionary: Map<number, DictEntry>,
   self: number,
-  secrets: Set<number>,
+  channel: number | null,
   online: Set<number>,
   onSelectSignal: (signal: number) => void,
   onViewImage: (image: Pixel[]) => void,
@@ -21,7 +22,7 @@ export function Chat(props: {
   const restoreScrollRef = useRef<{ height: number, top: number } | null>(null);
   const pendingBottomRef = useRef(false);
 
-  const filtered = filterSecrets(props.messages, props.secrets);
+  const filtered = filterChannels(props.messages, props.channel);
   const total = filtered.length;
   const [readCount, setReadCount] = useState(total);
   const unread = total - readCount;
@@ -57,7 +58,7 @@ export function Chat(props: {
     const el = containerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
     setReadCount(total);
-  }, [total, props.secrets]);
+  }, [total]);
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
@@ -83,7 +84,7 @@ export function Chat(props: {
       ref={containerRef}
       onScroll={handleScroll}
     >
-      {withImages.map((message) => <Message
+      {withImages.map((message,i) => <Message key={i}
         message={message}
         dictionary={props.dictionary}
         self={props.self}
@@ -122,7 +123,7 @@ export function Message(props: {
       />
     {props.message.image && <span className="message-viewimage"
       onClick={() => props.onViewImage(props.message.image!)}
-    >⏼</span>}
+    ><span className="material-symbols-outlined">visibility</span></span>}
   </div>
 }
 
@@ -149,14 +150,13 @@ export function Text(props: {
 }): React.ReactNode {
   return <span className="text">
     {props.signals.map((signal, i) => <Fragment key={i}>
-      <span className="tooltip-wrap" onClick={() => props.onSelectSignal(signal)}>
+      <TooltipWrap onClick={() => props.onSelectSignal(signal)} tooltip={signal}>
         {props.online.has(signal) ?
           <Sender sender={signal}/>
         :
           <span className="text-signal">{props.dictionary.get(signal)?.def ?? signal}</span>
         }
-        <div className="tooltip">{signal}</div>
-      </span>
+      </TooltipWrap>
       {i < props.signals.length && separator(signal, props.signals[i+1], props.dictionary)}
       {i > 0 && signal === props.signals[i-1] && <span>{props.dictionary.get(signal)?.double}</span>}
     </Fragment>

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import "./Dictionary.css"
+import { Table } from "./Table";
 
 const DICT_KEY = "relay-dictionary";
 
@@ -72,9 +73,13 @@ function importDict(json: string): EditDict {
   return dict;
 }
 
+export type DictionaryHandle = {
+  focusSignal: (signal: number) => void,
+};
+
 export function Dictionary(props: {
   onChangeDict: (dict: Map<number, DictEntry>) => void,
-  setOnDefine: (onDefine: (signal: number) => void) => void,
+  ref?: React.Ref<DictionaryHandle>,
 }) {
 
   const [detail, setDetail] = useState(false);
@@ -124,8 +129,8 @@ export function Dictionary(props: {
     }
   }
 
-  const ref = useRef<HTMLDivElement | null>(null);
-  
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
   function addRow(signal?: number) {
     changeDict(prev => [...prev, [
       signal ? signal.toString() : "",
@@ -137,7 +142,7 @@ export function Dictionary(props: {
     ]]);
 
     window.setTimeout(() => {
-      const newEditor = ref.current!.children.item(ref.current!.childElementCount - 2);
+      const newEditor = containerRef.current!.children.item(containerRef.current!.childElementCount - 2);
       if (!newEditor) return;
       newEditor.scrollIntoView({
         behavior: "smooth",
@@ -153,9 +158,9 @@ export function Dictionary(props: {
     }, 0);
   }
 
-  useEffect(() => {
-    props.setOnDefine(signal => {
-      const existingEditor = ref.current!
+  useImperativeHandle(props.ref, () => ({
+    focusSignal(signal: number) {
+      const existingEditor = containerRef.current!
         .getElementsByClassName(`dict-editor-def-${signal}`)
         .item(0);
       if (existingEditor) {
@@ -172,8 +177,8 @@ export function Dictionary(props: {
       } else if (signal < 0) {
         addRow(signal);
       }
-    });
-  }, [ref.current, dict]);
+    },
+  }), [dict]);
 
   return <div className="dict">
     <div className="dict-editor-controls">
@@ -190,33 +195,26 @@ export function Dictionary(props: {
         navigator.clipboard.writeText(exportDict(dict));
       }}>Export→</button>
     </div>
-    <div className="dict-editor" ref={ref}>
-      <div className="dict-editor-header">Signal</div>
-      <div className="dict-editor-header">Definition</div>
-      <button className='dict-editor-header dict-editor-delete'
-        onClick={() => addRow()}
-      >+</button>
-      {dict.map((def, row) => {
+    <Table
+      ref={containerRef}
+      columns={["Signal", "Definition"]}
+      dataColumnWidths="74px 2fr"
+      rows={dict.map(def => [def[0], def[1]])}
+      onChangeCell={(row, col, value) => changeDict(updateCell(row, col, value))}
+      onDeleteRow={row => changeDict(prev => prev.filter((_, i) => i !== row))}
+      onAddRow={() => addRow()}
+      onFocusCell={row => setFocus(row)}
+      onFocusDeleteRow={() => setFocus(-1)}
+      cellClassName={(row, col) => {
+        const focusClass = focus === row ? "table-focus" : "";
+        if (col !== 1) return focusClass;
         let idClass = "";
         try {
-          idClass = parseInt(def[0]).toString();
+          idClass = parseInt(dict[row][0]).toString();
         } catch (e) {};
-        return <>
-          <input className={`dict-editor-cell dict-editor-focus-${focus === row}`}
-            value={def[0]}
-            onFocus={() => setFocus(row)}
-            onChange={e => changeDict(updateCell(row, 0, e.currentTarget.value))}/>
-          <input className={`dict-editor-cell dict-editor-focus-${focus === row} dict-editor-def-${idClass}`}
-            value={def[1]}
-            onFocus={() => setFocus(row)}
-            onChange={e => changeDict(updateCell(row, 1, e.currentTarget.value))}/>
-          <button className={`dict-editor-cell dict-editor-focus-${focus === row} dict-editor-delete`}
-            onFocus={() => setFocus(-1)}
-            onClick={() => changeDict(prev => prev.filter((_,i) => i !== row))}
-          >x</button>
-        </>
-      })}
-    </div>
+        return `${focusClass} dict-editor-def-${idClass}`;
+      }}
+      />
     <div className="dict-editor-controls">
       <button onClick={() => {
         setDetail(d => !d)
@@ -227,7 +225,7 @@ export function Dictionary(props: {
     </div>
     {detail && <div className="dict-editor-detail">
       {[2, 3, 4].map(i =>
-        <div className="dict-editor-controls">
+        <div className="dict-editor-controls" key={i}>
           <div className="dict-editor-format-label">{["Before", "After", "Double"][i-2]}</div>
           <button className="dict-editor-format-choice" disabled={focus<0 || dict[focus][i]===""}
             onClick={() => changeDict(updateCell(focus, i, ""))}>

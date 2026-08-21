@@ -1,0 +1,142 @@
+.toolbar-bar {
+  flex: none;
+
+  height: var(--font-large);
+  padding: var(--margin-small) var(--margin-large);
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-grayed);
+
+  font-family: var(--font-main);
+  font-size: var(--font-size-large);
+  letter-spacing: 0.05em;
+  color: white;
+
+  display: flex;
+  align-items: center;
+  gap: var(--margin-small);
+}
+
+.toolbar-bar > * {
+  height: var(--font-large);
+}
+
+@media (width < 500px) {
+  .toolbar-title {
+    display: none;
+  }
+}
+
+.toolbar-sidebar-toggle {
+  flex: none;
+  width: auto;
+  aspect-ratio: 1/1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: 1px solid var(--color-back-highlight);
+  color: white;
+  border-radius: 6px;
+}
+
+.material-symbols-outlined {
+  font-size: 28px !important;
+}
+
+.toolbar-sidebar-toggle:hover {
+  background-color: #333333;
+}
+
+.toolbar-sidebar-toggle--closed {
+  background: black;
+  color: #666666;
+}
+
+
+@media (width < 320px) {
+  .social {
+    display: none;
+  }
+
+  .toolbar-online span {
+    display: none;
+  }
+
+  .toolbar-online span.material-symbols-outlined {
+    display: block;
+  }
+
+  .toolbar-online {
+    width: auto !important;
+    aspect-ratio: 1/1 !important;
+    padding: 0 !important;
+  }
+}
+
+.output-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.output-code {
+  flex: none;
+  width: calc(var(--font-size-large) * 4 * 0.83333);
+  background: black;
+  color: white;
+  border: 1px solid #666666;
+  font-family: var(--font-main);
+  font-size: var(--font-size-large);
+  padding: 0 6px;
+  height: 28px;
+  letter-spacing: 0.1em;
+}
+
+.toolbar-online {
+  flex: none;
+  width: calc(var(--font-size-large) * 4 * 0.83333);
+  background: black;
+  color: white;
+  font-family: var(--font-main);
+  font-size: var(--font-size-large);
+  padding: 0 6px;
+  height: 28px;
+  letter-spacing: 0.1em;
+
+  display: flex;
+  background-color: transparent;
+  border: 1px solid var(--color-back-highlight);
+  color: white;
+  border-radius: 6px;
+}
+
+.output-code:focus {
+  outline: none;
+  border-color: white;
+}
+
+.social {
+  padding: 0;
+  aspect-ratio: 1/1;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  flex-grow: 0;
+  flex-shrink: 0;
+  background-color: transparent;
+  border: none;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.toolbar-separator {
+  flex: none;
+  height: calc(100% + 2*var(--margin-small));
+  background-color: var(--color-grayed);
+  width: 1px;
+  margin: var(--margin-small);
+}

@@ -1,12 +1,21 @@
 @font-face {
-  font-family: "Monocraft";
-  src: url("/fonts/Monocraft.ttf") format("truetype");
+  font-family: "JetBrainsNerd";
+  src: url("/fonts/JetBrainsMonoNerdFont-Medium.ttf") format("truetype");
   font-display: swap;
 }
 
 :root {
   color-scheme: dark;
-  background: #0a0a0a;
+  --font-main: 'JetBrainsNerd', monospace;
+  --font-size-large: 20px;
+  --font-size-small: 16px;
+  --margin-small: 6px;
+  --margin-large: 12px;
+  --color-text: white;
+  --color-grayed: #666;
+  --color-background: #000;
+  --color-back-highlight: #333;
+  background: var(--color-background);
 }
 
 * {
@@ -19,19 +28,15 @@ body,
   height: 100%;
   width: 100%;
   margin: 0;
-}
-
-body {
-  background: #0a0a0a;
+  overflow: none;
 }
 
 button {
-  background: white;
-  color: black;
-  border: 1px solid #333333;
-  font-family: Monocraft, monospace;
-  font-size: 27px;
-  letter-spacing: 0.05em;
+  background: var(--color-text);
+  color: var(--color-background);
+  border: 1px solid var(--color-back-highlight);
+  font-family: var(--font-main);
+  font-size: var(--font-size-large);
   cursor: pointer;
   flex: 1;
   min-width: 0;
@@ -42,13 +47,13 @@ button {
 }
 
 button:hover {
-  border-color: #666666;
+  border-color: var(--color-grayed);
 }
 
 button:active {
-  border-color: white;
+  border-color: var(--color-text);
 }
 
 button:disabled {
-  background-color: #666666;
+  background-color: var(--color-grayed);
 }

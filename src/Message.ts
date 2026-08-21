@@ -142,10 +142,15 @@ export function processImages(messages: Message[]): Message[] {
     });
 }
 
-export function filterSecrets(messages: Message[], secrets: Set<number>) {
+export function filterChannels(messages: Message[], channel: number | null) {
   return messages
-    .filter(m => m.signals[0] !== -65535 || secrets.has(m.signals[1]) || secrets.has(-65536))
-    .map(m => m.signals[0] !== -65535 ? m : {
+    .filter(m => (m.signals[0] !== -65535 && channel === null)
+      || (m.signals[0] === -65535 && channel === m.signals[1])
+      || channel === -65536)
+    .map(m => channel !== -65536 || m.signals[0] !== -65535 ? {
+      ...m, signals:
+        m.signals[0] === -65535 ? [...m.signals.slice(2)] : [...m.signals]
+    } : {
       ...m, tags: [...m.tags, "secret"]
     });
 }

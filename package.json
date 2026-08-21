@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "flexlayout-react": "^0.10.5",
+    "material-symbols": "^0.46.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "three": "^0.185.1"

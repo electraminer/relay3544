@@ -1,3 +1,21 @@
+.relay {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  
+  overflow: none;
+}
+
+.channel-badge {
+  flex: none;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
+  color: var(--color-grayed);
+  letter-spacing: 0.05em;
+}
+
 .editor {
   flex: 1;
   min-height: 0;
@@ -6,8 +24,12 @@
   gap: 16px;
 }
 
-.msgeditor {
+.chat-viewer {
   flex: 2;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .toolbar {
@@ -36,8 +58,8 @@ textarea {
   padding: 10px;
   box-sizing: border-box;
   border: 1px solid transparent;
-  font-family: Monocraft, monospace;
-  font-size: 27px;
+  font-family: var(--font-main);
+  font-size: var(--font-size-large);
   line-height: 1;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -45,8 +67,8 @@ textarea {
 }
 
 .backdrop {
-  background: black;
-  color: white;
+  background: var(--color-background);
+  color: var(--color-text);
   pointer-events: none;
 }
 
@@ -60,13 +82,13 @@ textarea {
   resize: none;
   background: transparent;
   color: transparent;
-  caret-color: white;
-  border-color: #666666;
+  caret-color: var(--color-text);
+  border-color: var(--color-grayed);
 }
 
 textarea:focus {
   outline: none;
-  border-color: white;
+  border-color: var(--color-text);
 }
 
 textarea.invalid {
@@ -78,8 +100,8 @@ textarea.invalid {
   padding: 8px 10px;
   background: #1a0000;
   color: #ff5555;
-  font-family: Monocraft, monospace;
-  font-size: 18px;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
   border: 1px solid #ff5555;
   border-radius: 2px;
   overflow-wrap: break-word;
@@ -90,8 +112,8 @@ textarea.invalid {
   padding: 8px 10px;
   background: #00001a;
   color: #5555ff;
-  font-family: Monocraft, monospace;
-  font-size: 18px;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
   border: 1px solid #5555ff;
   border-radius: 2px;
   overflow-wrap: break-word;
@@ -102,42 +124,11 @@ textarea.invalid {
   padding: 8px 10px;
   background: #001a00;
   color: #55ff55;
-  font-family: Monocraft, monospace;
-  font-size: 18px;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
   border: 1px solid #55ff55;
   border-radius: 2px;
   overflow-wrap: break-word;
-}
-
-.output-controls {
-  display: flex;
-  gap: 8px;
-}
-
-.output-code {
-  flex: 1;
-  min-width: 0;
-  background: black;
-  color: white;
-  border: 1px solid #666666;
-  font-family: Monocraft, monospace;
-  font-size: 27px;
-  padding: 0 10px;
-  letter-spacing: 0.1em;
-  width: 0;
-}
-
-.output-code:focus {
-  outline: none;
-  border-color: white;
-}
-
-.headbutton {
-  width: 33.33%
-}
-
-.headbutton button {
-  width: 100%;
 }
 
 .chat-wrap {
@@ -152,12 +143,12 @@ textarea.invalid {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background: black;
-  color: white;
-  border: 1px solid #666666;
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-grayed);
   padding: 10px;
-  font-family: Monocraft, monospace;
-  font-size: 18px;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
   line-height: 1.25;
 }
 
@@ -167,7 +158,7 @@ textarea.invalid {
   right: 25px;
   flex: none;
   width: auto;
-  font-size: 18px;
+  font-size: var(--font-size-small);
   padding: 4px 12px;
   z-index: 10;
 }
@@ -179,7 +170,7 @@ textarea.invalid {
 }
 
 .message--secret {
-  color: #666666;
+  color: var(--color-grayed);
 }
 
 .message--command {
@@ -193,19 +184,19 @@ textarea.invalid {
 .message-time {
   flex: none;
   padding-left: 2px;
-  color: #666666;
+  color: var(--color-grayed);
 }
 
 .message--self .message-time {
-  background-color: #666666;
-  color: black;
+  background-color: var(--color-grayed);
+  color: var(--color-background);
 }
 
 .sender {
   flex: none;
   height: 20px;
-  width: 48px;
-  font-size: 18px;
+  width: 40px;
+  font-size: var(--font-size-small);
 }
 
 .tooltip-line {
@@ -217,6 +208,8 @@ textarea.invalid {
   min-width: 0;
   word-break: break-word;
   white-space: pre-wrap;
+  font-size: var(--font-size-small);
+  font-family: var(--font-main);
 }
 
 .tooltip-wrap {
@@ -224,59 +217,40 @@ textarea.invalid {
 }
 
 .tooltip {
-  position: absolute;
-  top: calc(100%);
-  right: 0;
+  position: fixed;
   width: max-content;
-  background: black;
-  color: white;
-  border: 1px solid #666666;
+  max-width: 280px;
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-grayed);
   padding: 0px 4px;
-  font-family: Monocraft, monospace;
-  font-size: 18px;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
   line-height: 1.25;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition:
-    opacity 0.1s ease,
-    transform 0.1s ease,
-    visibility 0.1s;
-  z-index: 10;
-}
-
-.tooltip-wrap:hover .tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
+  z-index: 10000;
 }
 
 .tooltip-title {
-  color: #666666;
+  color: var(--color-grayed);
   letter-spacing: 0.05em;
 }
 
 .tooltip-empty {
-  color: #666666;
+  color: var(--color-grayed);
 }
 
 .message-viewimage {
   cursor: pointer;
   background-color: #AAAAFF;
-  color: black;
-  width: 21px;
-  padding-left: 4px;
+  color: var(--color-background);
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
+  text-align: center;
+  display: flex;
 }
 
-.social {
-  padding: 0;
-  aspect-ratio: 1/1;
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  flex-grow: 0;
-  flex-shrink: 0;
-  background-color: transparent;
-  border: none;
+.message-viewimage .material-symbols-outlined {
+  font-size: 20px !important;
+  margin: auto;
 }

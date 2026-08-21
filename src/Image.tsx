@@ -5,6 +5,7 @@ import "./Image.css";
 import { compile } from './converter';
 import { processImage } from './Message';
 import type { DictEntry } from './Dictionary';
+import { Table } from './Table';
 
 export interface Pixel {
   x: number,
@@ -178,41 +179,22 @@ export function ImageEditor(props: {
     }
   }
 
-  return <div className="image-editor">
-    <div className="image-editor-header">X</div>
-    <div className="image-editor-header">Y</div>
-    <div className="image-editor-header">Z</div>
-    <div className="image-editor-header">R</div>
-    <div className="image-editor-header">C</div>
-    <button className='image-editor-header image-editor-delete'
-      onClick={() => changeImage(prev => [...prev, ["0", "0", "0", "0", "0"]])}
-    >+</button>
-    {image.map((pixel, row) => {
-
-      return <>
-        <input className="image-editor-cell" value={pixel[0]}
-          onChange={e => changeImage(updateCell(row, 0, e.currentTarget.value))}/>
-        <input className="image-editor-cell" value={pixel[1]}
-          onChange={e => changeImage(updateCell(row, 1, e.currentTarget.value))}/>
-        <input className="image-editor-cell" value={pixel[2]}
-          onChange={e => changeImage(updateCell(row, 2, e.currentTarget.value))}/>
-        <input className="image-editor-cell" value={pixel[3]}
-          onChange={e => changeImage(updateCell(row, 3, e.currentTarget.value))}/>
-        <input className="image-editor-cell" value={pixel[4]}
-          style={{backgroundColor: (() => {
-            try {
-              return `#${lerpColor(getColor(parseInt(pixel[4])),0,0.5).toString(16)}`
-            } catch (e) {
-              return "#000000"
-            }
-          })()}}
-          onChange={e => changeImage(updateCell(row, 4, e.currentTarget.value))}/>
-        <button className='image-editor-cell image-editor-delete'
-          onClick={() => changeImage(prev => prev.filter((_,i) => i !== row))}
-        >x</button>
-      </>
-    })}
-  </div>
+  return <Table
+    columns={["X", "Y", "Z", "R", "C"]}
+    dataColumnWidths="repeat(5, 1fr)"
+    rows={image}
+    onChangeCell={(row, col, value) => changeImage(updateCell(row, col, value))}
+    onDeleteRow={row => changeImage(prev => prev.filter((_, i) => i !== row))}
+    onAddRow={() => changeImage(prev => [...prev, ["0", "0", "0", "0", "0"]])}
+    cellStyle={(_row, col, value) => {
+      if (col !== 4) return undefined;
+      try {
+        return {backgroundColor: `#${lerpColor(getColor(parseInt(value)),0,0.5).toString(16)}`};
+      } catch (e) {
+        return {backgroundColor: "#000000"};
+      }
+    }}
+    />
 }
 
 function imageToSignals(image: Pixel[]): number[] {

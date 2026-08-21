@@ -6,10 +6,10 @@ import {
   MultiCompileError,
 } from './converter';
 import './Relay.css';
-import { Chat, Sender } from './Chat';
-import type { Message } from './Message';
+import { Chat } from './Chat';
 import type { Pixel } from './Image';
 import type { DictEntry } from './Dictionary';
+import type { Relay, useRelaySocket } from './useRelaySocket';
 
 function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
   const ranges = errors.filter((e) => e.end > e.start).sort((a, b) => a.start - b.start);
@@ -26,7 +26,13 @@ function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
   return parts;
 }
 
-function Editor({ dictionary, onSend }: { dictionary: Map<number, DictEntry>, onSend: (msg: string) => void}) {
+export function EditorPane(props: {
+  dictionary: Map<number, DictEntry>,
+  onSend: (msg: number[]) => void,
+  canSend: boolean,
+}) {
+  const {dictionary, onSend, canSend} = props;
+
   const [value, setValue] = useState('');
   const [compiled, setCompiled] = useState('');
   const [importErrors, setImportErrors] = useState<CompileError[]>([]);
@@ -92,14 +98,16 @@ function Editor({ dictionary, onSend }: { dictionary: Map<number, DictEntry>, on
 
   function handleSend() {
     if (compileErrors.length > 0 || compiled.length === 0) return;
-    onSend(compiled);
+    onSend(compiled.split(" ").map(x => parseInt(x)));
     handleChange("");
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      handleSend();
+      if (canSend) {
+        e.preventDefault();
+        handleSend();
+      }
     }
   }
 
@@ -110,7 +118,7 @@ function Editor({ dictionary, onSend }: { dictionary: Map<number, DictEntry>, on
         <button disabled={compileErrors.length > 0} onClick={handleExport}>
           Export→
         </button>
-        <button disabled={compileErrors.length > 0 || compiled.length === 0} onClick={handleSend}>
+        <button disabled={compileErrors.length > 0 || compiled.length === 0 || !canSend} onClick={handleSend}>
           Send↑
         </button>
       </div>
@@ -149,219 +157,23 @@ function Editor({ dictionary, onSend }: { dictionary: Map<number, DictEntry>, on
   );
 }
 
-const SOCKET_URL = 'wss://dscr-relay.dixonary.co.uk/';
-const CODE_STORAGE_KEY = 'message-compiler-socket-code';
-const DEFAULT_CODE = new Array(4).fill(0).map(_ => Math.floor(Math.random() * 8)).join("");
-const MESSAGES_STORAGE_KEY = 'relay-messages';
-const SECRETS_STORAGE_KEY = 'relay-secrets';
-
-type SocketStatus = 'connecting' | 'open' | 'closed';
-
-function isOctalCode(text: string): boolean {
-  return /^[0-7]{0,4}$/.test(text);
-}
-
-function loadMessages(): Message[] {
-  try {
-    const raw = localStorage.getItem(MESSAGES_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!parsed) return [];
-    return parsed;
-  } catch (e) {
-    console.log("load error", e);
-    return [];
-  }
-}
-
-function loadSecrets(): Set<number> {
-  try {
-    const raw = localStorage.getItem(SECRETS_STORAGE_KEY);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed);
-  } catch (e) {
-    console.log("load error", e);
-    return new Set();
-  }
-}
-
-let alerted = false;
-
-function loadCode(): string {
-  try {
-    const raw = localStorage.getItem(CODE_STORAGE_KEY);
-    if (raw && isOctalCode(raw)) return raw;
-  } catch {
-    // ignore
-  }
-  if (!alerted) { // Jank but it works
-    alert(`This page is a fan-made server for the game 'A Message from Deep Space'. It's highly recommended that you play that first, as it serves as a 'tutorial' for what you'll learn here (and is just a very good game!)`)
-    alerted = true;
-  }
-  return DEFAULT_CODE;
-}
-
-function handshakeFor(code: string): string | null {
-  if (code.length !== 4) return null;
-  return `S,${parseInt(code, 8)}`;
-}
-
-function SocketOutput({dictionary, setOnSend, onImage, onDefine}:
-  {dictionary: Map<number, DictEntry>
-     setOnSend: (onSend: (msg: string) => void) => void,
-     onImage: (image: Pixel[]) => void,
-    onDefine: (signal: number) => void,
-  }) {
-  const [status, setStatus] = useState<SocketStatus>('connecting');
-  const [messages, setMessages] = useState<Message[]>(loadMessages);
-  const [code, setCode] = useState<string>(loadCode);
-  const [connectedCode, setConnectedCode] = useState<number | null>(null);
-  const [secrets, setSecrets] = useState<Set<number>>(loadSecrets);
-  const socketRef = useRef<WebSocket | null>(null);
-
-  const [online, setOnline] = useState<number[]>([]);
-
-  useEffect(() => {
-    const ws = new WebSocket(SOCKET_URL);
-    socketRef.current = ws;
-    setStatus('connecting');
-
-    ws.onopen = () => {
-      setStatus('open');
-      const handshake = handshakeFor(loadCode());
-      if (handshake) ws.send(handshake);
-    };
-    ws.onclose = () => setStatus('closed');
-    ws.onerror = () => setStatus('closed');
-    ws.onmessage = (event) => {
-      const [type, ...params] = (event.data as string).split(",");
-      const numbers = params.map(x => parseInt(x));
-      if (type === "U") {
-        setConnectedCode(null);
-      }
-      if (type === "K") {
-        setConnectedCode(parseInt(numbers[0].toString(8)));
-      }
-      if (type === "C") {
-        setOnline(numbers.map(x => parseInt(x.toString(8))));
-      }
-      if (type === "R") {
-        const message: Message = {
-          id: numbers[1],
-          sender: parseInt(numbers[0].toString(8)),
-          signals: numbers.slice(2),
-          receivedAt: Date.now(),
-          tags: [],
-        };
-        const recentMessages = messages.slice(-10);
-        if (recentMessages.find(m =>
-          m.id === message.id
-          && m.sender === message.sender
-          && m.signals.join(" ") === message.signals.join(" "))) return;
-        setMessages(m => [...m, message]);
-      }
-    };
-
-    setOnSend(msg => {
-      const signals = msg.split(" ").map((x: string) => parseInt(x));
-      // Locally processed commands
-      if (signals.length === 2 && signals[0] === -65533) {
-        setSecrets(secrets => new Set([...secrets].filter(x => x !== signals[1])));
-        return;
-      } else if (signals.length === 2 && signals[0] === -65534) {
-        setSecrets(secrets => new Set([...secrets, signals[1]]));
-        return;
-      }
-      // Send
-      const message = `M,${msg.replaceAll(" ",",")}`;
-      ws.send(message);
-    })
-
-    return () => {
-      socketRef.current = null;
-      ws.close();
-    };
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
-  }, [messages]);
-
-  useEffect(() => {
-    localStorage.setItem(SECRETS_STORAGE_KEY, JSON.stringify([...secrets]));
-  }, [secrets]);
-
-  useEffect(() => {
-    if (!isOctalCode(code)) return;
-    setCode(code);
-    localStorage.setItem(CODE_STORAGE_KEY, code);
-  }, [code]);
-
-  function handleSend() {
-    const ws = socketRef.current;
-    const handshake = handshakeFor(code);
-    if (!ws || ws.readyState !== WebSocket.OPEN || !handshake) return;
-    ws.send(handshake);
-  }
+export function ChatViewer(props: {
+  dictionary: Map<number, DictEntry>,
+  onImage: (image: Pixel[]) => void,
+  onDefine: (signal: number) => void,
+  relay: ReturnType<typeof useRelaySocket>,
+  channel: number | null,
+}) {
+  const { dictionary, onImage, onDefine, relay } = props;
+  const { code, online, messages } = relay;
 
   return (
-    <div className="editor msgeditor">
-      <div className="output-controls">
-        <a className='social' href='https://store.steampowered.com/app/4080030/The_Message_from_Deep_Space/'>
-          <img src='/Steam_icon_logo.svg'/>
-        </a>
-        <input
-          className="output-code"
-          placeholder="0000"
-          inputMode="numeric"
-          spellCheck={false}
-          autoComplete="off"
-          maxLength={4}
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-        />
-        <div className="tooltip-wrap headbutton">
-          <button
-            disabled={status !== 'open' || code.length !== 4}
-            onClick={handleSend}
-          >
-            {parseInt(code) === connectedCode ? `${online.length} online` : `connect`}
-          </button>
-          <div className="tooltip">
-            <div className="tooltip-title">Online</div>
-            {online.length > 0 ? (
-              online.map((id, i) =>
-                <div className="tooltip-line"><Sender sender={id} key={i}/></div>
-              )
-            ) : (
-              <div className="tooltip-empty">No one online</div>
-            )}
-          </div>
-        </div>
-        <div className="tooltip-wrap headbutton">
-          <button disabled>
-            {secrets.size === 1 ? "1 secret" : `${secrets.size} secrets`}
-          </button>
-          <div className="tooltip">
-            <div className="tooltip-title">Secrets</div>
-            {secrets.size > 0 ? (
-              [...secrets].map((id, i) =>
-                <span key={i} className="tooltip-line"
-                >{decompile(`${id}`, dictionary)}</span>
-              )
-            ) : (
-              <div className="tooltip-empty">No secrets</div>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="chat-viewer">
       <div className="field">
         <Chat
           messages={messages}
-          self={connectedCode ?? 0}
-          secrets={secrets}
+          self={code ?? 0}
+          channel={props.channel}
           dictionary={dictionary}
           online={new Set(online)}
           onSelectSignal={onDefine}
@@ -372,18 +184,34 @@ function SocketOutput({dictionary, setOnSend, onImage, onDefine}:
   );
 }
 
-export function Relay({ dictionary, onImage, onDefine }: {
+export function RelayPane(props: {
   dictionary: Map<number, DictEntry>,
   onImage: (image: Pixel[]) => void,
   onDefine: (signal: number) => void,
+  onSend: (message: number[], channel?: number) => void,
+  relay: Relay,
+  channel: number | null,
 }) {
-  const [onSend, setOnSend] = useState<(msg: string) => void>(() => {});
   return (
     <div className="relay">
-      <SocketOutput
-        dictionary={dictionary} setOnSend={onSend => setOnSend(() => onSend)}
-        onImage={onImage} onDefine={onDefine}/>
-      <Editor dictionary={dictionary} onSend={onSend}/>
+      <ChatViewer
+        dictionary={props.dictionary}
+        onImage={props.onImage}
+        onDefine={props.onDefine}
+        relay={props.relay}
+        channel={props.channel}
+        />
+      <EditorPane
+        dictionary={props.dictionary}
+        onSend={msg => {
+          if (props.channel === null || props.channel === -65536) {
+            props.onSend(msg);
+          } else {
+            props.onSend(msg, props.channel)
+          }
+        }}
+        canSend={props.relay.status === "readwrite"}
+        />
     </div>
   );
 }

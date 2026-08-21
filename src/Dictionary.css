@@ -1,56 +1,9 @@
 
 .dict {
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.dict-editor {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-
-  display: grid;
-  grid-template-columns: 88px 2fr 20px;
-  grid-auto-rows: 20px;
-  overflow-y: scroll;
-  scrollbar-width: thin;
-  flex: 1;
-}
-
-.dict-editor-cell {
-  min-width: 0;
-  font-family: Monocraft;
-  font-size: 18px;
-  background: black;
-  border: 1px solid #666666;
-}
-
-.dict-editor-focus-true {
-  border: 1px solid white;
-  outline: 1px solid white;
-  z-index: 1;
-}
-
-.dict-editor-header {
-  min-width: 0;
-  font-family: Monocraft;
-  font-size: 18px;
-  padding-left: 2px;
-  background: #666666;
-  border: 1px solid ;
-  color: white;
-  position: sticky;
-  top: 0;
-}
-
-.dict-editor-delete {
-  width: 20px;
-  background-color: white;
-  color: black;
-  padding-left: 4px;
-  padding-bottom: 2px;
-  line-height: 0;
 }
 
 .dict-editor-controls {
@@ -60,7 +13,7 @@
 }
 
 .dict-editor-controls button {
-  font-size: 18px;
+  font-size: var(--font-size-small);
 }
 
 .dict-editor-detail {
@@ -84,19 +37,19 @@
   flex: 1;
   min-width: 0;
   width: 0;
-  font-family: Monocraft;
-  font-size: 18px;
-  background: black;
-  border: 1px solid #666666;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
+  background: var(--color-background);
+  border: 1px solid var(--color-grayed);
 }
 
 .dict-editor-notes {
   min-height: 100px;
   min-width: 0;
   width: 100%;
-  font-size: 18px;
-  background: black;
-  border: 1px solid #666666;
+  font-size: var(--font-size-small);
+  background: var(--color-background);
+  border: 1px solid var(--color-grayed);
   position: relative;
-  color: white;
+  color: var(--color-text);
 }
