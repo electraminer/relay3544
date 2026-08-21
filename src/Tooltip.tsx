@@ -16,7 +16,11 @@ export function TooltipWrap(props: {
       ref={wrapRef}
       onMouseEnter={() => setRect(wrapRef.current!.getBoundingClientRect())}
       onMouseLeave={() => setRect(null)}
-      onClick={onClick}
+      onClick={e => {
+        onClick?.();
+        e.preventDefault();
+        setRect(null);
+      }}
     >
       {children}
       {rect && createPortal(
