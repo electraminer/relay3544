@@ -174,7 +174,7 @@ export function Dictionary(props: {
             existingEditor.selectionStart = existingEditor.selectionEnd = existingEditor.value.length;
           }
         }, 250);
-      } else if (signal < 0) {
+      } else {
         addRow(signal);
       }
     },

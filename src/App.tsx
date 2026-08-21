@@ -217,6 +217,7 @@ function App() {
       <Toolbar
         relay={relay}
         dictOpen={dictOpen}
+        dictionary={dictMap}
         onToggleDict={() => toggleBorder(dictBorderId, dictOpen, setDictOpen)}
         imageOpen={imageOpen}
         onToggleImage={() => toggleBorder(imageBorderId, imageOpen, setImageOpen)}

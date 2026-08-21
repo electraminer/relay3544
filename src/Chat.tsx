@@ -4,7 +4,7 @@ import { imageToSignals, type Pixel } from "./Image";
 import type { DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
 import { playNotes, senderSong, songToSignals } from "./Note";
-import { decompile } from "./converter";
+import { decompile, separator } from "./converter";
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
@@ -123,7 +123,7 @@ export function Message(props: {
     </TooltipWrap>
     <TooltipWrap onClick={() => props.onSelectSignal(props.message.sender)}
       tooltip={props.message.sender}>
-      <Sender sender={props.message.sender}/>
+      <Sender sender={props.message.sender} dictionary={props.dictionary}/>
     </TooltipWrap>
     <Text
       signals={props.message.signals}
@@ -155,7 +155,8 @@ export function Message(props: {
 }
 
 export function Sender(props: {
-  sender: number
+  sender: number,
+  dictionary: Map<number, DictEntry>,
 }): React.ReactNode {
   const senderCode = props.sender.toString().padStart(4, "0");
   return <span className="sender"
@@ -167,7 +168,7 @@ export function Sender(props: {
         color: `rgb(${code[1]*24+64}, ${code[2]*16+64}, ${code[3]*24+64})`,
       };
     })()}
-  >{senderCode}</span>
+  >{props.dictionary.get(props.sender)?.def ?? senderCode}</span>
 }
 
 export function Text(props: {
@@ -178,27 +179,22 @@ export function Text(props: {
 }): React.ReactNode {
   return <span className="text">
     {props.signals.map((signal, i) => <Fragment key={i}>
-      <TooltipWrap onClick={() => props.onSelectSignal(signal)} tooltip={signal}>
-        {props.online.has(signal) ?
-          <Sender sender={signal}/>
+      <TooltipWrap onClick={() => {
+        const isHuman = signal >= 10 && props.online.has(signal);
+        if (!props.dictionary.has(signal) && !isHuman) return;
+        props.onSelectSignal(signal);
+      }} tooltip={signal}>
+        {props.online.has(signal) && signal >= 10 ?
+          <Sender sender={signal} dictionary={props.dictionary}/>
         :
           <span className="text-signal">{props.dictionary.get(signal)?.def ?? signal}</span>
         }
       </TooltipWrap>
-      {i < props.signals.length && separator(signal, props.signals[i+1], props.dictionary)}
+      {i < props.signals.length && <span>
+        {separator(signal, props.signals[i+1], props.dictionary)}
+      </span>}
       {i > 0 && signal === props.signals[i-1] && <span>{props.dictionary.get(signal)?.double}</span>}
     </Fragment>
   )}
   </span>;
-}
-
-export function separator(signal1: number, signal2: number, dictionary: Map<number, DictEntry>) {
-  let after = dictionary.get(signal1)?.after ?? " ";
-  if (signal1 >= 0) after = "";
-  let before = dictionary.get(signal2)?.before ?? " ";
-  if (signal2 >= 0) before = "";
-  let sep = after + before;
-  if (after === before) sep = after;
-  // TODO add more advanced separation rules like in the game
-  return <span>{sep}</span>;
 }

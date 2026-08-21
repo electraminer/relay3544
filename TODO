@@ -1,13 +1,10 @@
 ☐ Import from file
 ☐ Change color algorithm to match DSCR
-☐ Expanded mode
 ☐ Dictionary grouping
 ☐ Multiple dictionaries
-☐ Add date on message code hover
 ☐ Dictionary signal count
 ☐ Tooltips
 ☐ Font size setting?
-☐ Call sign nicknames
 ☐ Warn on duplicate definition
 ☐ Display word boundaries
 ☐ Indentation formatting
@@ -15,3 +12,4 @@
 ☐ Add | syntax to import
 ☐ Some sort of message edit / delete capability
 ☐ Noscript tag / no webgl tag
+☐ Music editor

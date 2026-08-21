@@ -84,22 +84,25 @@ export function decompile(value: string, dictionary: Map<number, DictEntry>): st
   const signals = value.split(/ |\n/);
   const errors = [];
   let tokens: string = "";
-  for (const signal of signals) {
+  for (let i = 0; i < signals.length; i++) {
+    const signal = signals[i];
     if (signal.trim() === "") continue;
     try {
       const number = parseInt(signal);
-      if (dictionary.has(number)) {
-        tokens = tokens + " " + dictionary.get(number)?.def;
-      } else {
-        const lastChar = tokens.codePointAt(tokens.length - 1) ?? 0;
-        if (number >= 0 && number < 10
-            && lastChar >= ("0".codePointAt(0) ?? 0)
-            && lastChar <= ("9".codePointAt(0) ?? 0)) {
-          tokens = tokens + number.toString();
-        } else {
-          tokens = tokens + " " + number.toString();
-        }
-      };
+      let tokenStr = dictionary.get(number)?.def;
+      if (!tokenStr) tokenStr = number.toString();
+      
+      // Separator
+      if (i > 0) {
+        tokens += separator(parseInt(signals[i-1]), number, dictionary);
+      }
+
+      tokens += tokenStr;
+
+      // Double Separator
+      if (i > 0 && parseInt(signals[i-1]) === number) {
+        tokens += dictionary.get(number)?.double ?? "";
+      }
     } catch (e) {
       errors.push(new CompileError(`${signal} is not a number`, 0, 0));
     }
@@ -108,4 +111,14 @@ export function decompile(value: string, dictionary: Map<number, DictEntry>): st
     throw new MultiCompileError(errors);
   }
   return tokens.trim();
+}
+
+export function separator(signal1: number, signal2: number, dictionary: Map<number, DictEntry>) {
+  let after = dictionary.get(signal1)?.after ?? " ";
+  if (signal1 >= 0) after = "";
+  let before = dictionary.get(signal2)?.before ?? " ";
+  if (signal2 >= 0) before = "";
+  let sep = after + before;
+  if (after === before) sep = after;
+  return sep;
 }

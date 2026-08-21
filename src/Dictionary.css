@@ -28,6 +28,9 @@
 
 .dict-editor-format-label {
   min-width: 88px;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
+  padding-top: 2px;
 }
 .dict-editor-format-choice {
   min-width: 20px;

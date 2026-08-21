@@ -4,6 +4,7 @@ import 'material-symbols/outlined.css';
 import { Sender } from './Chat';
 import { TooltipWrap } from './Tooltip';
 import type { Relay } from './useRelaySocket';
+import type { DictEntry } from './Dictionary';
 
 export function Toolbar(props: {
   relay: Relay,
@@ -11,6 +12,7 @@ export function Toolbar(props: {
   onToggleDict: () => void,
   imageOpen: boolean,
   onToggleImage: () => void,
+  dictionary: Map<number, DictEntry>,
 }) {
   const { relay, dictOpen, onToggleDict, imageOpen, onToggleImage } = props;
   const { code, online, join, soundEnabled, setSoundEnabled } = relay;
@@ -57,7 +59,7 @@ export function Toolbar(props: {
           {online.length > 0 ? (
             online.map((id, i) =>
               <div className="tooltip-line" key={i}>
-                <Sender sender={id} key={i}/></div>
+                <Sender sender={id} key={i} dictionary={props.dictionary}/></div>
             )
           ) : (
             <div className="tooltip-empty">No one online</div>
