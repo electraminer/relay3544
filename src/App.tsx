@@ -68,25 +68,55 @@ const layoutJson: IJsonModel = {
   },
 };
 
+const LAYOUT_STORAGE_KEY = 'app-layout';
+
+function loadLayoutJson(): IJsonModel {
+  try {
+    const saved = localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (saved) return JSON.parse(saved) as IJsonModel;
+  } catch (e) {
+    console.error('Failed to load saved layout, using default', e);
+  }
+  return layoutJson;
+}
+
 function App() {
-  const [{model, dictBorderId, imageBorderId}] = useState(() => {
-    const model = Model.fromJson(layoutJson);
+  const [{model, dictBorderId, imageBorderId, dictOpen: initialDictOpen, imageOpen: initialImageOpen}] = useState(() => {
+    let model: Model;
+    try {
+      model = Model.fromJson(loadLayoutJson());
+    } catch (e) {
+      console.error('Failed to restore saved layout, using default', e);
+      model = Model.fromJson(layoutJson);
+    }
     let dictBorderId = '';
     let imageBorderId = '';
+    let dictOpen = true;
+    let imageOpen = false;
     model.visitNodes(node => {
       if (!(node instanceof BorderNode)) return;
-      if (node.getLocation().getName() === 'left') dictBorderId = node.getId();
-      if (node.getLocation().getName() === 'right') imageBorderId = node.getId();
+      if (node.getLocation().getName() === 'left') {
+        dictBorderId = node.getId();
+        dictOpen = node.getSelected() !== -1;
+      }
+      if (node.getLocation().getName() === 'right') {
+        imageBorderId = node.getId();
+        imageOpen = node.getSelected() !== -1;
+      }
     });
-    return { model, dictBorderId, imageBorderId };
+    return { model, dictBorderId, imageBorderId, dictOpen, imageOpen };
   });
   const [image, setImage] = useState<Pixel[]>([]);
   const [dictMap, setDict] = useState<Map<number, DictEntry>>(new Map());
   const dictionaryRef = useRef<DictionaryHandle>(null);
   const layoutRef = useRef<ILayoutApi>(null);
   const relay = useRelaySocket();
-  const [dictOpen, setDictOpen] = useState(true);
-  const [imageOpen, setImageOpen] = useState(false);
+  const [dictOpen, setDictOpen] = useState(initialDictOpen);
+  const [imageOpen, setImageOpen] = useState(initialImageOpen);
+
+  function onModelChange(model: Model) {
+    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(model.toJson()));
+  }
 
   function toggleBorder(id: string, isOpen: boolean, setOpen: (open: boolean) => void) {
     model.doAction(Actions.updateNodeAttributes(id, { selected: isOpen ? -1 : 0 }));
@@ -184,6 +214,7 @@ function App() {
         model={model}
         factory={factory}
         onRenderTab={onRenderTab}
+        onModelChange={onModelChange}
         />
       </div>
     </div>
