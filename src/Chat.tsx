@@ -1,8 +1,10 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { filterChannels, processEdits, processImages, type Message } from "./Message";
-import type { Pixel } from "./Image";
+import { filterChannels, processEdits, processImages, processSongs, type Message } from "./Message";
+import { imageToSignals, type Pixel } from "./Image";
 import type { DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
+import { playNotes, senderSong, songToSignals } from "./Note";
+import { decompile } from "./converter";
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
@@ -29,6 +31,7 @@ export function Chat(props: {
   const recent = filtered.slice(-visibleCount);
   const processed = processEdits(recent);
   const withImages = processImages(processed);
+  const withSongs = processSongs(withImages);
 
   const isScrolling = visibleCount > INITIAL_MESSAGE_COUNT;
 
@@ -84,7 +87,7 @@ export function Chat(props: {
       ref={containerRef}
       onScroll={handleScroll}
     >
-      {withImages.map((message,i) => <Message key={i}
+      {withSongs.map((message,i) => <Message key={i}
         message={message}
         dictionary={props.dictionary}
         self={props.self}
@@ -121,9 +124,26 @@ export function Message(props: {
       online={props.online}
       onSelectSignal={props.onSelectSignal}
       />
-    {props.message.image && <span className="message-viewimage"
+    {props.message.image && <span className="message-button message-viewimage"
       onClick={() => props.onViewImage(props.message.image!)}
     ><span className="material-symbols-outlined">visibility</span></span>}
+    {props.message.image && <span className="message-button message-viewimage"
+      onClick={() =>
+        navigator.clipboard.writeText(decompile(
+          imageToSignals(props.message.image!).join(" "),
+          props.dictionary,
+        ))}
+    ><span className="material-symbols-outlined">content_copy</span></span>}
+    {props.message.song && <span className="message-button message-playsong"
+      onClick={() => playNotes(props.message.song!)}
+    ><span className="material-symbols-outlined">play_arrow</span></span>}
+    {props.message.song && <span className="message-button message-playsong"
+      onClick={() =>
+        navigator.clipboard.writeText(decompile(
+          songToSignals(props.message.song!).join(" "),
+          props.dictionary,
+        ))}
+    ><span className="material-symbols-outlined">content_copy</span></span>}
   </div>
 }
 
@@ -132,6 +152,7 @@ export function Sender(props: {
 }): React.ReactNode {
   const senderCode = props.sender.toString().padStart(4, "0");
   return <span className="sender"
+    onClick={() => playNotes(senderSong(props.sender))}
     style={(() => {
       const code = [...senderCode].map(x => parseInt(x));
       return {

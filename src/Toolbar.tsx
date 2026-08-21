@@ -13,7 +13,7 @@ export function Toolbar(props: {
   onToggleImage: () => void,
 }) {
   const { relay, dictOpen, onToggleDict, imageOpen, onToggleImage } = props;
-  const { code, online, join } = relay;
+  const { code, online, join, soundEnabled, setSoundEnabled } = relay;
   const [codeField, setCodeField] = useState(code.toString());
 
   return (
@@ -30,6 +30,14 @@ export function Toolbar(props: {
         <img src='/Steam_icon_logo.svg'/>
       </a>
       <div className='toolbar-spacer'/>
+      <button
+        className={`toolbar-sidebar-toggle
+          ${soundEnabled ? '' : 'toolbar-sidebar-toggle--closed'}`}
+        title={soundEnabled ? 'Mute message sounds' : 'Enable message sounds'}
+        onClick={() => setSoundEnabled(!soundEnabled)}
+      ><span className="material-symbols-outlined">
+        {soundEnabled ? 'volume_up' : 'volume_off'}  
+      </span></button>
       <input
         className="output-code"
         placeholder="0000"

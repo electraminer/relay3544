@@ -1,4 +1,5 @@
 import type { Pixel } from "./Image";
+import type { Note } from "./Note";
 
 export interface Message {
   // When the message was recieved.
@@ -13,6 +14,8 @@ export interface Message {
   tags: string[];
   // Image of the message added by post processing
   image?: Pixel[];
+  // Song of the message added by post processing
+  song?: Note[];
 }
 
 /**
@@ -139,6 +142,63 @@ export function processImages(messages: Message[]): Message[] {
       const cutImage = [...m.signals.slice(0, start + 2), -25, ...m.signals.slice(end)];
 
       return {...m, signals: cutImage, tags: [...m.tags, "image"], image}
+    });
+}
+
+
+export function processSong(signals: number[]): [Note[], number, number] | undefined {
+  // Look for song
+  const songStart = signals.findIndex(signal => signal === -577);
+  if (songStart < 0) return;
+  if (signals[songStart + 1] !== -14) return;
+  let i = songStart + 2;
+  const song: Note[] = [];
+  while (signals[i] !== -15) {
+    // Note
+    if (signals[i++] !== -605003) return;
+    const note = [];
+    for (let n = 0; n < 3; n++) {
+      let sign = 1;
+      let number = 0;
+      let precision = 1;
+      if (signals[i] === -1) {
+        sign = -1;
+        i++;
+      }
+      while (signals[i] >= 0) {
+        const digit = signals[i];
+        number *= Math.pow(10, digit.toString().length)
+        number += digit;
+        i++;
+      }
+      if (signals[i] === -10) {
+        i++;
+        while (signals[i] >= 0) {
+          const digit = signals[i];
+          precision /= Math.pow(10, digit.toString().length)
+          number += precision * digit;
+          i++;
+        }
+      }
+      if (signals[i] === -3) {
+        i++;
+      }
+      note.push(number * sign);
+    }
+    song.push({time: note[0], length: note[1], frequency: note[2]});
+  }
+  return [song, songStart, i];
+}
+
+export function processSongs(messages: Message[]): Message[] {
+  return messages
+    .map(m => {
+      const songResult = processSong(m.signals);
+      if (!songResult) return m;
+      const [song, start, end] = songResult;
+      const cutSong = [...m.signals.slice(0, start + 2), -25, ...m.signals.slice(end)];
+
+      return {...m, signals: cutSong, tags: [...m.tags, "song"], song}
     });
 }
 

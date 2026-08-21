@@ -181,6 +181,10 @@ textarea.invalid {
   color: #AAAAFF;
 }
 
+.message--song {
+  color: #AAFFAA;
+}
+
 .message-time {
   flex: none;
   padding-left: 2px;
@@ -239,9 +243,8 @@ textarea.invalid {
   color: var(--color-grayed);
 }
 
-.message-viewimage {
+.message-button {
   cursor: pointer;
-  background-color: #AAAAFF;
   color: var(--color-background);
   width: 20px;
   height: 20px;
@@ -250,7 +253,15 @@ textarea.invalid {
   display: flex;
 }
 
-.message-viewimage .material-symbols-outlined {
+.message-viewimage {
+  background-color: #AAAAFF;
+}
+
+.message-playsong {
+  background-color: #AAFFAA;
+}
+
+.message-button .material-symbols-outlined {
   font-size: 20px !important;
   margin: auto;
 }

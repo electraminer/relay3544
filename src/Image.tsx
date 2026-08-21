@@ -197,7 +197,7 @@ export function ImageEditor(props: {
     />
 }
 
-function imageToSignals(image: Pixel[]): number[] {
+export function imageToSignals(image: Pixel[]): number[] {
   const signals = [];
   signals.push(-53);
   signals.push(-14);

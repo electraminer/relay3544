@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Message } from './Message';
 import { codeFromDecimal, codeToDecimal, isValidCode, loadCode, randomCode, saveCode } from './Code';
+import { playNotes, senderSong } from './Note';
 
 const SOCKET_URL = 'wss://dscr-relay.dixonary.co.uk/';
 const MESSAGES_STORAGE_KEY = 'relay-messages';
@@ -27,6 +28,8 @@ export interface Relay {
   online: number[],
   messages: Message[],
   send: (msg: number[]) => void,
+  soundEnabled: boolean,
+  setSoundEnabled: (enabled: boolean) => void,
 }
 
 
@@ -39,6 +42,12 @@ export function useRelaySocket(): Relay {
   useEffect(() => {
     localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
   }, [messages]);
+
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
 
 
   const [code, setCode] = useState<number>(() => loadCode());
@@ -105,6 +114,9 @@ export function useRelaySocket(): Relay {
             receivedAt: Date.now(),
             tags: [],
           };
+          if (soundEnabledRef.current) {
+            playNotes(senderSong(message.sender));
+          }
           const recentMessages = messages.slice(-10);
           if (recentMessages.find(m =>
             m.id === message.id
@@ -141,5 +153,7 @@ export function useRelaySocket(): Relay {
     online,
     messages,
     send,
+    soundEnabled,
+    setSoundEnabled,
   };
 }
