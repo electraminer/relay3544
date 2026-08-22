@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPixelatedPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import "./Image.css";
 import { compile } from './converter';
 import { processImage } from './Message';
 import type { DictEntry } from './Dictionary';
 import { Table } from './Table';
+import { RenderPass } from 'three/examples/jsm/Addons.js';
 
 export interface Pixel {
   x: number,
@@ -53,10 +57,15 @@ function getColor(colorId: number) {
 export function ImageViewer(props: {
   image: Pixel[],
 }) {
+  const [pixelated, setPixelated] = useState(
+    localStorage.getItem("relay-image-pixelation") === "true"
+  );
+
   const containerRef = useRef<HTMLDivElement>(null);
   const image = props.image;
 
   useEffect(() => {
+    localStorage.setItem("relay-image-pixelation", String(pixelated));
     const container = containerRef.current;
     if (!container) return;
 
@@ -80,6 +89,14 @@ export function ImageViewer(props: {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
+    const composer = new EffectComposer(renderer);
+    if (pixelated) {
+      composer.addPass(new RenderPixelatedPass(2, scene, camera));
+      composer.addPass(new OutputPass());
+    } else {
+      composer.addPass(new RenderPass(scene, camera));
+    }
+
     scene.add(new THREE.AmbientLight(0xffffff, 0.3));
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
     keyLight.position.set(5, 8, 6);
@@ -102,7 +119,7 @@ export function ImageViewer(props: {
     function animate() {
       frameId = requestAnimationFrame(animate);
       controls.update();
-      renderer.render(scene, camera);
+      composer.render();
     }
     animate();
 
@@ -113,6 +130,7 @@ export function ImageViewer(props: {
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+      composer.setSize(width, height);
     });
     resizeObserver.observe(container);
 
@@ -120,15 +138,21 @@ export function ImageViewer(props: {
       resizeObserver.disconnect();
       cancelAnimationFrame(frameId);
       controls.dispose();
+      composer.dispose();
       geometry.dispose();
       spheres.forEach((sphere) => (sphere.material as THREE.Material).dispose());
       renderer.dispose();
       container.removeChild(renderer.domElement);
     };
-  }, [image]);
+  }, [image, pixelated]);
 
   return <div className="image-viewer">
-    <div className="image-container" ref={containerRef} />
+    <div className="image-container" ref={containerRef}>
+      <button className={`pixelation-button pixelation-button--${pixelated}`}
+        onClick={() => setPixelated(!pixelated)}>
+        <span className="material-symbols-outlined">grain</span>
+      </button>
+    </div>
   </div>;
 }
 
