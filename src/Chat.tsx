@@ -35,7 +35,7 @@ export function Chat(props: {
   const withImages = processImages(processed);
   const withSongs = processSongs(withImages);
 
-  const isScrolling = visibleCount > INITIAL_MESSAGE_COUNT;
+  const [isScrolling, setIsScrolling] = useState(false);
 
   // When more (older) messages are prepended, keep the previously-visible
   // content in place instead of letting the scroll position jump. When the
@@ -59,14 +59,19 @@ export function Chat(props: {
   // been lazy-loaded — otherwise a new message would yank the view away
   // from whatever the user scrolled up to read.
   useLayoutEffect(() => {
-    if (isScrolling) return;
+    if (isScrolling) {
+      setVisibleCount(visibleCount + 1)
+      return;
+    }
     const el = containerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
+    setIsScrolling(false);
     setReadCount(total);
   }, [total]);
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
+    setIsScrolling(el.scrollHeight - (el.scrollTop + el.clientHeight) >= SCROLL_EDGE_THRESHOLD);
     if (el.scrollTop <= SCROLL_EDGE_THRESHOLD && visibleCount < total) {
       restoreScrollRef.current = { height: el.scrollHeight, top: el.scrollTop };
       setVisibleCount(count => Math.min(count + LOAD_STEP, total));
