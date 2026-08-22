@@ -853,9 +853,41 @@ declare module "@strudel/webaudio" {
      * > We probably don't need to care about the internals yet, so this is
      *   untyped, we just are saying that this exists.
      */
-    export const getAudioContext: () => {
-        currentTime: any;
-    };
+    export const getAudioContext: () => AudioContext;
+
+    /**
+     * Replace the AudioContext used by superdough.
+     *
+     * Not part of the original strudel-ts declarations; added because
+     * swapping in a fresh context (after closing the old one) is the
+     * simplest way to hard-stop everything currently scheduled/playing.
+     */
+    export const setAudioContext: (context: AudioContext) => AudioContext;
+
+    /**
+     * Resume the current AudioContext and (re)load its AudioWorklets.
+     *
+     * This is the un-gated version of {@link initAudioOnFirstClick} - that
+     * one only ever runs once (on the first click), so after swapping in a
+     * new AudioContext this is what needs to be called instead.
+     */
+    export const initAudio: (options?: {
+        disableWorklets?: boolean;
+        maxPolyphony?: number;
+        audioDeviceName?: string;
+        multiChannelOrbits?: boolean;
+    }) => Promise<void>;
+
+    /**
+     * Not part of the original strudel-ts declarations. superdough caches an
+     * internal audio-routing controller the first time it's needed, bound to
+     * whichever AudioContext was current at that point. It is not rebuilt
+     * when the context is swapped via {@link setAudioContext}, which causes
+     * "Can't connect nodes from different AudioContexts" errors. Calling
+     * this with no argument clears the cached controller so it gets rebuilt
+     * against the current context next time it's needed.
+     */
+    export const setSuperdoughAudioController: (newController?: unknown) => unknown;
 
     /**
      * Call this on startup to register support for the built-in {@link Synth}s.

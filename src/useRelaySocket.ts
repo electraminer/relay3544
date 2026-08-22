@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Message } from './Message';
 import { codeFromDecimal, codeToDecimal, isValidCode, loadCode, randomCode, saveCode } from './Code';
-import { playNotes, senderSong } from './Note';
+import { senderSong, type AudioPlayer } from './Note';
 
 const SOCKET_URL = 'wss://dscr-relay.dixonary.co.uk/';
 const MESSAGES_STORAGE_KEY = 'relay-messages';
@@ -33,7 +33,7 @@ export interface Relay {
 }
 
 
-export function useRelaySocket(openChannels: number[]): Relay {
+export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Relay {
   const socketRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<SocketStatus>("connecting");
 
@@ -43,16 +43,24 @@ export function useRelaySocket(openChannels: number[]): Relay {
     localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(
+    localStorage.getItem("relay-notifications") !== "false"
+  );
   const soundEnabledRef = useRef(soundEnabled);
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
+    localStorage.setItem("relay-notifications", String(soundEnabled));
   }, [soundEnabled]);
 
   const openChannelsRef = useRef(openChannels);
   useEffect(() => {
     openChannelsRef.current = openChannels;
   }, [openChannels]);
+
+  const audioRef = useRef(audio);
+  useEffect(() => {
+    audioRef.current = audio;
+  }, [audio]);
 
 
   const [code, setCode] = useState<number>(() => loadCode());
@@ -129,8 +137,10 @@ export function useRelaySocket(openChannels: number[]): Relay {
             && m.sender === message.sender
             && m.signals.join(" ") === message.signals.join(" "))) return;
 
-          if (soundEnabledRef.current && channelOpen) {
-            playNotes(senderSong(message.sender));
+          if (soundEnabledRef.current
+            && channelOpen
+            && audioRef.current.currentSongId === null) {
+            audioRef.current.play(senderSong(message.sender));
           }
           setMessages(m => [...m, message]);
         }

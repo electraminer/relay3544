@@ -3,7 +3,7 @@ import { filterChannels, processImages, processSongs, type Message } from "./Mes
 import { imageToSignals, type Pixel } from "./Image";
 import type { DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
-import { playNotes, senderSong, songToSignals } from "./Note";
+import { senderSong, songToSignals, type AudioPlayer } from "./Note";
 import { decompile, separator } from "./converter";
 import { processCommands } from "./Command";
 
@@ -19,6 +19,7 @@ export function Chat(props: {
   online: Set<number>,
   onSelectSignal: (signal: number) => void,
   onViewImage: (image: Pixel[]) => void,
+  audio: AudioPlayer,
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_MESSAGE_COUNT);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -98,6 +99,7 @@ export function Chat(props: {
         online={props.online}
         onSelectSignal={props.onSelectSignal}
         onViewImage={props.onViewImage}
+        audio={props.audio}
       />)}
     </div>
     {isScrolling && (
@@ -115,7 +117,9 @@ export function Message(props: {
   self: number,
   onSelectSignal: (signal: number) => void,
   onViewImage: (image: Pixel[]) => void,
+  audio: AudioPlayer,
 }): React.ReactNode {
+  const messageId = `${props.message.receivedAt} ${props.message.id}`
   return <div className={`message
       ${props.message.tags.map(t => `message--${t}`).join(" ")}
       ${props.message.sender === props.self && "message--self"}
@@ -127,9 +131,10 @@ export function Message(props: {
     </TooltipWrap>
     <TooltipWrap onClick={() => props.onSelectSignal(props.message.sender)}
       tooltip={props.message.sender}>
-      <Sender sender={props.message.sender} dictionary={props.dictionary}/>
+      <Sender audio={props.audio} sender={props.message.sender} dictionary={props.dictionary}/>
     </TooltipWrap>
     <Text
+      audio={props.audio}
       signals={props.message.signals}
       dictionary={props.dictionary}
       online={props.online}
@@ -146,8 +151,16 @@ export function Message(props: {
         ))}
     ><span className="material-symbols-outlined">content_copy</span></span>}
     {props.message.song && <span className="message-button message-playsong"
-      onClick={() => playNotes(props.message.song!)}
-    ><span className="material-symbols-outlined">play_arrow</span></span>}
+      onClick={() => {
+        if (props.audio.currentSongId === messageId) {
+          props.audio.stop();
+        } else {
+          props.audio.forcePlay(props.message.song!, messageId);
+        }
+      }}
+    ><span className="material-symbols-outlined">
+      {props.audio.currentSongId === messageId ? `music_note_2` : `play_arrow`}
+    </span></span>}
     {props.message.song && <span className="message-button message-playsong"
       onClick={() =>
         navigator.clipboard.writeText(decompile(
@@ -161,10 +174,11 @@ export function Message(props: {
 export function Sender(props: {
   sender: number,
   dictionary: Map<number, DictEntry>,
+  audio: AudioPlayer,
 }): React.ReactNode {
   const senderCode = props.sender.toString().padStart(4, "0");
   return <span className="sender"
-    onClick={() => playNotes(senderSong(props.sender))}
+    onClick={() => props.audio.forcePlay(senderSong(props.sender))}
     style={(() => {
       const code = [...senderCode].map(x => parseInt(x));
       return {
@@ -179,6 +193,7 @@ export function Text(props: {
   signals: number[],
   dictionary: Map<number, DictEntry>,
   online: Set<number>,
+  audio: AudioPlayer,
   onSelectSignal: (signal: number) => void,
 }): React.ReactNode {
   return <span className="text">
@@ -189,7 +204,7 @@ export function Text(props: {
         props.onSelectSignal(signal);
       }} tooltip={signal}>
         {props.online.has(signal) && signal >= 10 ?
-          <Sender sender={signal} dictionary={props.dictionary}/>
+          <Sender audio={props.audio} sender={signal} dictionary={props.dictionary}/>
         :
           <span className="text-signal">{props.dictionary.get(signal)?.def ?? signal}</span>
         }

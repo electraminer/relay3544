@@ -10,6 +10,7 @@ import { Chat } from './Chat';
 import type { Pixel } from './Image';
 import type { DictEntry } from './Dictionary';
 import type { Relay, useRelaySocket } from './useRelaySocket';
+import type { AudioPlayer } from './Note';
 
 function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
   const ranges = errors.filter((e) => e.end > e.start).sort((a, b) => a.start - b.start);
@@ -163,6 +164,7 @@ export function ChatViewer(props: {
   onDefine: (signal: number) => void,
   relay: ReturnType<typeof useRelaySocket>,
   channel: number | null,
+  audio: AudioPlayer,
 }) {
   const { dictionary, onImage, onDefine, relay } = props;
   const { code, online, messages } = relay;
@@ -178,6 +180,7 @@ export function ChatViewer(props: {
           online={new Set(online)}
           onSelectSignal={onDefine}
           onViewImage={onImage}
+          audio={props.audio}
           />
       </div>
     </div>
@@ -191,6 +194,7 @@ export function RelayPane(props: {
   onSend: (message: number[], channel?: number) => void,
   relay: Relay,
   channel: number | null,
+  audio: AudioPlayer,
 }) {
   return (
     <div className="relay">
@@ -200,6 +204,7 @@ export function RelayPane(props: {
         onDefine={props.onDefine}
         relay={props.relay}
         channel={props.channel}
+        audio={props.audio}
         />
       <EditorPane
         dictionary={props.dictionary}

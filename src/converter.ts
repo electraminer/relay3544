@@ -40,10 +40,10 @@ export function tokenize(value: string, dictionary: Map<number, DictEntry>): [nu
     length = i; 
     
     // Parse numbers
-    const matchNum = value.substring(i).match(/^(-?[0-9]+)/)?.[0];
-    if (matchNum !== undefined) {
-      const number = parseFloat(matchNum);
-      signalsAtChar[i + matchNum.length] ??= [...signals, number];
+    const match = value.substring(i).match(/^\|?(-?[0-9]+)/);
+    if (match !== null) {
+      const number = parseFloat(match[1]);
+      signalsAtChar[i + match[0].length] ??= [...signals, number];
     }
     
     if (value.charAt(i) && value.charAt(i).trim() === "") {
@@ -81,7 +81,7 @@ export function compile(value: string, dictionary: Map<number, DictEntry>): stri
 }
 
 export function decompile(value: string, dictionary: Map<number, DictEntry>): string {
-  const signals = value.split(/ |\n/);
+  const signals = value.split(/\s\|?/);
   const errors = [];
   let tokens: string = "";
   for (let i = 0; i < signals.length; i++) {

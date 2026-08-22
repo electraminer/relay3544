@@ -1,9 +1,14 @@
 import {
   getAudioContext,
+  initAudio,
   initAudioOnFirstClick,
   registerSynthSounds,
+  setAudioContext,
+  setSuperdoughAudioController,
   superdough,
 } from "@strudel/webaudio";
+import React from "react";
+import { useEffect } from "react";
 
 export interface Note {
   time: number; // in seconds
@@ -11,17 +16,75 @@ export interface Note {
   frequency: number; // in hertz
 }
 
-let initialized = false;
+export interface AudioPlayer {
+  isPlaying: boolean;
+  play: (notes: Note[], songId?: string) => void;
+  stop: () => Promise<void>;
+  forcePlay: (notes: Note[], songId?: string) => Promise<void>;
+  currentSongId: string | null;
+}
 
-export function playNotes(notes: Note[], sample?: string) {
-  if (!initialized) {
+export function useAudioPlayer() {
+
+  const [playlistEnd, setPlaylistEnd] = React.useState(-1);
+  const [currentTimeout, setCurrentTimeout] = React.useState<number | null>(null);
+  const [counter, setCounter] = React.useState(0);
+  const [currentSongId, setCurrentSongId] = React.useState<string | null>(null);
+
+  useEffect(() => {
     initAudioOnFirstClick();
     registerSynthSounds();
-    initialized = true;
+  }, []);
+
+  async function stop() {
+    if (currentTimeout) window.clearTimeout(currentTimeout);
+    setCurrentTimeout(null);
+    setPlaylistEnd(-1);
+    setCurrentSongId(null);
+    const oldContext = getAudioContext();
+    await oldContext.close();
+    setAudioContext(new AudioContext());
+    setSuperdoughAudioController(undefined);
+    await initAudio();
   }
-  const start = getAudioContext().currentTime;
-  for (const { time, length, frequency } of notes) {
-    superdough({ freq: frequency, s: sample ?? "triangle" }, start + time, length);
+
+  function play(notes: Note[], startTime: number, songId?: string) {
+    const now = getAudioContext().currentTime;
+    const start = Math.max(now, startTime);
+    let end = start;
+    for (const { time, length, frequency } of notes) {
+      superdough({ freq: frequency, s: "triangle" }, start + time, length);
+      end = Math.max(end, start + time + length);
+    }
+    setPlaylistEnd(end);
+    setCurrentSongId(songId ?? null);
+
+    setCurrentTimeout(timeout => {
+      if (timeout) window.clearTimeout(timeout);
+      const newTimeout = window.setTimeout(() => {
+        setCurrentTimeout(null);
+        setCurrentSongId(null);
+      }, Math.ceil((end - now)*1000));
+      return newTimeout;
+    });
+
+    setCounter(counter => counter + 1);
+  }
+
+  async function forcePlay(notes: Note[], songId?: string) {
+    await stop();
+    console.log("force");
+    play(notes, -1, songId);
+  }
+
+  console.log(playlistEnd, currentTimeout, counter);
+
+  return {
+    isPlaying: currentTimeout !== null,
+    play: (notes: Note[], songId?: string) => play(notes, playlistEnd, songId),
+    stop,
+    forcePlay,
+    currentSongId,
   }
 }
 

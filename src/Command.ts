@@ -166,7 +166,6 @@ function getCommandFromSentence(sentence: Map<number | null, number[]>, sender: 
 
 function getCommandFromSignals(signals: number[], sender: number): Command {getChannel
     const prepositions = getPrepositionsFromSignals(signals);
-    console.log(prepositions);
     const sentence = getSentenceFromPrepositions(prepositions, sender);
     return getCommandFromSentence(sentence, sender);
 }
@@ -193,7 +192,6 @@ function getCommandFromMessage(message: Message): Command {
         message.sender,
     );
     command.channel = getChannel(message.signals);
-    console.log(command);
     return command;
 }
 

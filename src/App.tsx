@@ -11,6 +11,7 @@ import { useRelaySocket } from './useRelaySocket';
 import { Image, type Pixel } from './Image';
 import { Dictionary, type DictEntry, type DictionaryHandle } from './Dictionary';
 import { Text } from './Chat';
+import { useAudioPlayer } from './Note';
 
 type ChatTabConfig = {
   channel: number | null,
@@ -123,7 +124,8 @@ function App() {
   const [dictOpen, setDictOpen] = useState(initialDictOpen);
   const [imageOpen, setImageOpen] = useState(initialImageOpen);
   const [openChannels, setOpenChannels] = useState(initialOpenChannels);
-  const relay = useRelaySocket(openChannels);
+  const audio = useAudioPlayer();
+  const relay = useRelaySocket(openChannels, audio);
 
   function onModelChange(model: Model) {
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(model.toJson()));
@@ -140,6 +142,7 @@ function App() {
       const signal = (tabNode.getConfig() as ChatTabConfig)?.channel;
       const signals = signal ? [signal] : [-111, -65535];
       renderValues.content = <Text
+        audio={audio}
         signals={signals}
         dictionary={dictMap}
         online={new Set(relay.online)}
@@ -167,6 +170,7 @@ function App() {
               setImage(img);
             }}
             relay={relay}
+            audio={audio}
             channel={channel}
             onSend={(msg, channel) => {
               if (msg[0] === -65534 && msg.length === 2) {
@@ -215,6 +219,7 @@ function App() {
   return (
     <div className="app">
       <Toolbar
+        audio={audio}
         relay={relay}
         dictOpen={dictOpen}
         dictionary={dictMap}
