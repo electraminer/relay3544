@@ -40,3 +40,8 @@ export function codeToDecimal(code: number): number {
 export function codeFromDecimal(codeDec: number): number {
     return parseInt(codeDec.toString(8).padStart(4, "0"));
 }
+
+export function codeToString(code: number): string {
+    if (!isValidCode(code)) throw new Error("Invalid code");
+    return code.toString().padStart(4, "0");
+}

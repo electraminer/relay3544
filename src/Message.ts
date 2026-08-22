@@ -18,119 +18,54 @@ export interface Message {
   song?: Note[];
 }
 
-/**
- * Processes message edits ( MISTAKE [ find ] CORRECTION [ replace ] messageid )
- * @param messages The raw messages
- * @returns a new array of processed messages post-edits
- */
-export function processEdits(messages: Message[]) {
-  const processed: Message[] = [];
-
-  for (const message of messages) {
-    // Copy the message
-    processed.push({...message});
-
-    // Mistake/Correction 
-    if (message.signals[0] !== -157401) continue;
-    const i = message.signals.findIndex(signal => signal === -157402);
-    if (i < 0) continue;
-    // Check for message number at end
-    let last = message.signals.length - 1;
-    let number = 0;
-    let power = 1;
-    while (message.signals[last] >= 0) {
-      number += message.signals[last] * power;
-      power *= 10;
-      last--;
-    }
-    // Check brackets
-    if (message.signals[1] !== -14) continue;
-    if (message.signals[i-1] !== -15) continue;
-    const find = message.signals.slice(2, i-1);
-    if (message.signals[i+1] !== -14) continue;
-    if (message.signals[last] !== -15) continue;
-    const replace = message.signals.slice(i+2, last);
-
-    // Find message to edit
-    for (let i = processed.length - 1; i--; i >= 0) {
-      const m = processed[i];
-      if (m.sender === message.sender
-        && (m.id === number || last === message.signals.length - 1)) {
-        // Apply edit
-        const signals = m.signals;
-        const newSignals = [];
-        for (let i = 0; i < signals.length; i++) {
-          // Check if the find is accurate
-          let match = true;
-          for (let j = 0; j < find.length; j++) {
-            if (signals[i + j] !== find[j]) {
-              match = false;
-              break;
-            }
-          }
-          if (match) {
-            // Replace
-            newSignals.push(...replace);
-            i += find.length - 1;
-          } else {
-            // Copy over
-            newSignals.push(signals[i])
-          }
-        }
-        m.signals = newSignals;
-        // Mark as command
-        const command = processed.at(-1)!;
-        command.tags = [...command.tags, "command"];
-        break;
-      }
-    }
-  }
-
-  return processed;
-}
-
 export function processImage(signals: number[]): [Pixel[], number, number] | undefined {
   // Look for image
-  const imageStart = signals.findIndex(signal => signal === -53);
-  if (imageStart < 0) return;
-  if (signals[imageStart + 1] !== -14) return;
-  let i = imageStart + 2;
-  const image: Pixel[] = [];
-  while (signals[i] !== -15) {
-    // Pixel
-    if (signals[i++] !== -52) return;
-    const pixel = [];
-    for (let n = 0; n < 5; n++) {
-      let sign = 1;
-      let number = 0;
-      let precision = 1;
-      if (signals[i] === -1) {
-        sign = -1;
-        i++;
-      }
-      while (signals[i] >= 0) {
-        const digit = signals[i];
-        number *= Math.pow(10, digit.toString().length)
-        number += digit;
-        i++;
-      }
-      if (signals[i] === -10) {
-        i++;
-        while (signals[i] >= 0) {
-          const digit = signals[i];
-          precision /= Math.pow(10, digit.toString().length)
-          number += precision * digit;
+  for (let imageStart = 0; imageStart < signals.length; imageStart++) {
+    if (signals[imageStart] !== -53) continue;
+    if (signals[imageStart + 1] !== -14) continue;
+    let i = imageStart + 2;
+    const image: Pixel[] = [];
+    let valid = true;
+    while (signals[i] !== -15) {
+      // Pixel
+      if (signals[i++] !== -52) {
+        valid = false;
+        continue;
+      };
+      const pixel = [];
+      for (let n = 0; n < 5; n++) {
+        let sign = 1;
+        let number = 0;
+        let precision = 1;
+        if (signals[i] === -1) {
+          sign = -1;
           i++;
         }
+        while (signals[i] >= 0) {
+          const digit = signals[i];
+          number *= Math.pow(10, digit.toString().length)
+          number += digit;
+          i++;
+        }
+        if (signals[i] === -10) {
+          i++;
+          while (signals[i] >= 0) {
+            const digit = signals[i];
+            precision /= Math.pow(10, digit.toString().length)
+            number += precision * digit;
+            i++;
+          }
+        }
+        if (signals[i] === -3) {
+          i++;
+        }
+        pixel.push(number * sign);
       }
-      if (signals[i] === -3) {
-        i++;
-      }
-      pixel.push(number * sign);
+      image.push({x: pixel[0], y: pixel[1], z: pixel[2], size: pixel[3], color: pixel[4]});
     }
-    image.push({x: pixel[0], y: pixel[1], z: pixel[2], size: pixel[3], color: pixel[4]});
+    if (valid) return [image, imageStart, i];
   }
-  return [image, imageStart, i];
+  return;
 }
 
 export function processImages(messages: Message[]): Message[] {
@@ -148,46 +83,52 @@ export function processImages(messages: Message[]): Message[] {
 
 export function processSong(signals: number[]): [Note[], number, number] | undefined {
   // Look for song
-  const songStart = signals.findIndex(signal => signal === -577);
-  if (songStart < 0) return;
-  if (signals[songStart + 1] !== -14) return;
-  let i = songStart + 2;
-  const song: Note[] = [];
-  while (signals[i] !== -15) {
-    // Note
-    if (signals[i++] !== -605003) return;
-    const note = [];
-    for (let n = 0; n < 3; n++) {
-      let sign = 1;
-      let number = 0;
-      let precision = 1;
-      if (signals[i] === -1) {
-        sign = -1;
-        i++;
+  for (let songStart = 0; songStart < signals.length; songStart++) {
+    if (signals[songStart] !== -577) continue;
+    if (signals[songStart + 1] !== -14) continue;
+    let i = songStart + 2;
+    const song: Note[] = [];
+    let valid = true;
+    while (signals[i] !== -15) {
+      // Note
+      if (signals[i++] !== -605003) {
+        valid = false;
+        continue;
       }
-      while (signals[i] >= 0) {
-        const digit = signals[i];
-        number *= Math.pow(10, digit.toString().length)
-        number += digit;
-        i++;
-      }
-      if (signals[i] === -10) {
-        i++;
-        while (signals[i] >= 0) {
-          const digit = signals[i];
-          precision /= Math.pow(10, digit.toString().length)
-          number += precision * digit;
+      const note = [];
+      for (let n = 0; n < 3; n++) {
+        let sign = 1;
+        let number = 0;
+        let precision = 1;
+        if (signals[i] === -1) {
+          sign = -1;
           i++;
         }
+        while (signals[i] >= 0) {
+          const digit = signals[i];
+          number *= Math.pow(10, digit.toString().length)
+          number += digit;
+          i++;
+        }
+        if (signals[i] === -10) {
+          i++;
+          while (signals[i] >= 0) {
+            const digit = signals[i];
+            precision /= Math.pow(10, digit.toString().length)
+            number += precision * digit;
+            i++;
+          }
+        }
+        if (signals[i] === -3) {
+          i++;
+        }
+        note.push(number * sign);
       }
-      if (signals[i] === -3) {
-        i++;
-      }
-      note.push(number * sign);
+      song.push({time: note[0], length: note[1], frequency: note[2]});
     }
-    song.push({time: note[0], length: note[1], frequency: note[2]});
+    if (valid) return [song, songStart, i];
   }
-  return [song, songStart, i];
+  return;
 }
 
 export function processSongs(messages: Message[]): Message[] {
@@ -207,10 +148,7 @@ export function filterChannels(messages: Message[], channel: number | null) {
     .filter(m => (m.signals[0] !== -65535 && channel === null)
       || (m.signals[0] === -65535 && channel === m.signals[1])
       || channel === -65536)
-    .map(m => channel !== -65536 || m.signals[0] !== -65535 ? {
-      ...m, signals:
-        m.signals[0] === -65535 ? [...m.signals.slice(2)] : [...m.signals]
-    } : {
+    .map(m => channel !== -65536 || m.signals[0] !== -65535 ? m : {
       ...m, tags: [...m.tags, "secret"]
     });
 }

@@ -1,10 +1,11 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { filterChannels, processEdits, processImages, processSongs, type Message } from "./Message";
+import { filterChannels, processImages, processSongs, type Message } from "./Message";
 import { imageToSignals, type Pixel } from "./Image";
 import type { DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
 import { playNotes, senderSong, songToSignals } from "./Note";
 import { decompile, separator } from "./converter";
+import { processCommands } from "./Command";
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
@@ -29,7 +30,7 @@ export function Chat(props: {
   const [readCount, setReadCount] = useState(total);
   const unread = total - readCount;
   const recent = filtered.slice(-visibleCount);
-  const processed = processEdits(recent);
+  const processed = processCommands(recent);
   const withImages = processImages(processed);
   const withSongs = processSongs(withImages);
 
@@ -88,7 +89,10 @@ export function Chat(props: {
       onScroll={handleScroll}
     >
       {withSongs.map((message,i) => <Message key={i}
-        message={message}
+        message={
+          (props.channel === null || props.channel === -65536)
+            ? message : {...message, signals: message.signals.slice(2)}
+        }
         dictionary={props.dictionary}
         self={props.self}
         online={props.online}
@@ -181,7 +185,7 @@ export function Text(props: {
     {props.signals.map((signal, i) => <Fragment key={i}>
       <TooltipWrap onClick={() => {
         const isHuman = signal >= 10 && props.online.has(signal);
-        if (!props.dictionary.has(signal) && !isHuman) return;
+        if (!props.dictionary.has(signal) && !isHuman && signal >= 0) return;
         props.onSelectSignal(signal);
       }} tooltip={signal}>
         {props.online.has(signal) && signal >= 10 ?

@@ -217,7 +217,7 @@ export function imageToSignals(image: Pixel[]): number[] {
       signals.push(-3);
     }
   }
-  signals.pop();
+  if (signals.length > 2) signals.pop();
   signals.push(-15);
   return signals;
 }
