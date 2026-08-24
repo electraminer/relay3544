@@ -5,7 +5,7 @@ import { Sender } from './Chat';
 import { TooltipWrap } from './Tooltip';
 import type { Relay } from './useRelaySocket';
 import type { DictEntry } from './Dictionary';
-import type { AudioPlayer } from './Note';
+import type { AudioPlayer } from './AudioPlayer';
 
 export function Toolbar(props: {
   relay: Relay,

@@ -11,7 +11,10 @@
 ☐ Fix copying onto all new lines
 ☐ Noscript tag / no webgl tag
 ☐ Music editor
-
+☐ Color / html formatting in definitions
 ☐ Add | formatting to dictionary
-
-☐ Add music loop
+☐ Add link to DSVR
+☐ Add music playlist/looping
+☐ .trim() lines
+☐ change websocket connection
+☐ spoiler tags / spoiler channels

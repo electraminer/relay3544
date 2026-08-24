@@ -8,10 +8,12 @@ import './App.css';
 import { Toolbar } from './Toolbar';
 import { RelayPane } from './Relay';
 import { useRelaySocket } from './useRelaySocket';
-import { Image, type Pixel } from './Image';
 import { Dictionary, type DictEntry, type DictionaryHandle } from './Dictionary';
 import { Text } from './Chat';
-import { useAudioPlayer } from './Note';
+import { useAudioPlayer } from './AudioPlayer';
+import { Image } from './spoilers/Image';
+import { ImagePane } from './Image';
+import { getChannelCommand, NULL_CHANNEL_NAME, sentInsideChannel } from './spoilers/Channel';
 
 type ChatTabConfig = {
   channel: number | null,
@@ -57,7 +59,7 @@ const layoutJson: IJsonModel = {
       {
         type: 'tabset',
         children: [
-          { id: "-111 -65535",
+          { id: NULL_CHANNEL_NAME.join(" "),
             type: 'tab',
             name: 'Message Chat',
             component: 'chat',
@@ -117,7 +119,7 @@ function App() {
     });
     return { model, dictBorderId, imageBorderId, dictOpen, imageOpen, openChannels: getOpenChannels(model) };
   });
-  const [image, setImage] = useState<Pixel[]>([]);
+  const [image, setImage] = useState<Image>(Image.empty());
   const [dictMap, setDict] = useState<Map<number, DictEntry>>(new Map());
   const dictionaryRef = useRef<DictionaryHandle>(null);
   const layoutRef = useRef<ILayoutApi>(null);
@@ -140,7 +142,7 @@ function App() {
   function onRenderTab(tabNode: TabNode, renderValues: ITabRenderValues) {
     if (tabNode.getComponent() === "chat") {
       const signal = (tabNode.getConfig() as ChatTabConfig)?.channel;
-      const signals = signal ? [signal] : [-111, -65535];
+      const signals = signal ? [signal] : NULL_CHANNEL_NAME;
       renderValues.content = <Text
         audio={audio}
         signals={signals}
@@ -157,7 +159,7 @@ function App() {
       case 'dictionary':
         return <Dictionary onChangeDict={setDict} ref={dictionaryRef}/>;
       case 'image':
-        return <Image image={image} dictionary={dictMap} />;
+        return <ImagePane image={image} dictionary={dictMap} />;
       case 'chat': {
         const channel = (node.getConfig() as ChatTabConfig)?.channel ?? null;
         return (
@@ -173,8 +175,9 @@ function App() {
             audio={audio}
             channel={channel}
             onSend={(msg, channel) => {
-              if (msg[0] === -65534 && msg.length === 2) {
-                const id = msg[1]?.toString() ?? "-111 -65535";
+              const channelCmd = getChannelCommand(msg);
+              if (channelCmd?.type === "join") {
+                const id = channelCmd.channel.toString();
                 try {
                   console.log(id);
                   model.doAction(Actions.addTab(
@@ -188,20 +191,16 @@ function App() {
                     -1,
                   ))
                 } catch (e) {
-                  model.doAction(Actions.selectTab(id?.toString()));
+                  model.doAction(Actions.selectTab(id));
                 }
                 return;
               }
-              if (msg[0] === -65533 && msg.length === 2) {
-                const id = msg[1]?.toString() ?? "-111 -65535";
+              if (channelCmd?.type === "leave") {
+                const id = channelCmd.channel.toString();
                 model.doAction(Actions.deleteTab(id));
                 return;
               }
-              if (channel) {
-                relay.send([-65535, channel, ...msg])
-              } else {
-                relay.send(msg);
-              }
+              relay.send(sentInsideChannel(msg, channel));
             }}
             onDefine={signal => {
               if (!dictOpen) {

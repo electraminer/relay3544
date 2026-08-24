@@ -1,32 +1,35 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+# Relay3544
+This is a fan-made client made by Electra (3544) for the Deep Space Communication Relay, a community server for talking in the language from the game "A Message from Deep Space". If you're somehow here without playing that game, you should go play it. If you are just looking to use the client, visit it at https://relay3544.web.app/.
 
-Currently, two official plugins are available:
+## Spoilers
+Certain sections of the code deal with parsing specific commands and file formats in Relay's language. All code dealing with these specifics should be in the `src/spoilers` directory, if you want to avoid learning anything about the language or the meaning of specific signals while reading the code, avoid this directory.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Suggestions
+If you have suggestions for the client, you can make a GitHub issue, ping me on discord (@electra_miner), or tell me on Relay if you see me (3544) in the chat.
 
-## React Compiler
+The TODO file contains a list of currently planned features. It's in no particular order.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Meta
+If a suggestion relates to specifics about signals or grammar, tell me using Relay signals (either on Relay or by sending a message full of numbers and no text). Suggestions about signals or grammar that are submitted in English or etc... will be ignored.
+(An example of such a suggestion: "We just made a new signal -42069 that means 'meme', you should make messages containing this signal be flagged as a meme" or "It would be awesome if there was a 3D model format that supported cubes, you should use [signal grammar] to represent a cube-shaped model")
 
-## Expanding the Oxlint configuration
+## Contributing
+If you're tired of waiting for me to add something and want to do it yourself, you can implement a change and submit a pull request for me to review. If you make something, follow a few basic guidelines:
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+### Communication
+You should probably tell me if you're working on a pull request, then we can avoid a situation where we both implement the same thing and waste effort, or where you make a feature only to find it's not something I want in the app and get rejected.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+### Clean Code
+My code is really messy, I'll try to slowly clean it up over time, I apoligise. If you add something, it can be a bit messy, but please don't make the problems worse than they are.
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### AI Usage
+You can use AI coding assistance if you want, so long as you responsibily review and test things. Documentation, comments, any other text, and graphics/assets should *never* be made by AI.
+
+### Meta
+If the thing you are implementing relates to language specifics, as mentioned in Suggestions/Meta, you should explain the idea to me first using Relay signals (either on Relay, in the description of the pull request, etc.) Pull requests that add new signals/grammar and force me to learn these new signals/grammar by reading code or text instead of through Relay will be ignored.
+
+## License
+You can use parts of my code in your code if you'd like, for free.
+If you want to create a full fork of the project or copy large, recognizable portions of the user-interface, you need to ask me for permission first.
+I'm not gonna make a fancy legal license, use your best judgement and don't be a dickhead.

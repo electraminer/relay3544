@@ -5,22 +5,16 @@ import {
   registerSynthSounds,
   setAudioContext,
   setSuperdoughAudioController,
-  superdough,
 } from "@strudel/webaudio";
 import React from "react";
 import { useEffect } from "react";
-
-export interface Note {
-  time: number; // in seconds
-  length: number; // in seconds
-  frequency: number; // in hertz
-}
+import type { Song } from "./spoilers/Music";
 
 export interface AudioPlayer {
   isPlaying: boolean;
-  play: (notes: Note[], songId?: string) => void;
+  play: (notes: Song, songId?: string) => void;
   stop: () => Promise<void>;
-  forcePlay: (notes: Note[], songId?: string) => Promise<void>;
+  forcePlay: (notes: Song, songId?: string) => Promise<void>;
   currentSongId: string | null;
 }
 
@@ -48,14 +42,13 @@ export function useAudioPlayer() {
     await initAudio();
   }
 
-  function play(notes: Note[], startTime: number, songId?: string) {
+  function play(song: Song, startTime: number, songId?: string) {
     const now = getAudioContext().currentTime;
     const start = Math.max(now, startTime);
-    let end = start;
-    for (const { time, length, frequency } of notes) {
-      superdough({ freq: frequency, s: "triangle" }, start + time, length);
-      end = Math.max(end, start + time + length);
-    }
+
+    song.play(start);
+    const end = song.length() + start;
+
     setPlaylistEnd(end);
     setCurrentSongId(songId ?? null);
 
@@ -71,60 +64,19 @@ export function useAudioPlayer() {
     setCounter(counter => counter + 1);
   }
 
-  async function forcePlay(notes: Note[], songId?: string) {
+  async function forcePlay(song: Song, songId?: string) {
     await stop();
     console.log("force");
-    play(notes, -1, songId);
+    play(song, -1, songId);
   }
 
   console.log(playlistEnd, currentTimeout, counter);
 
   return {
     isPlaying: currentTimeout !== null,
-    play: (notes: Note[], songId?: string) => play(notes, playlistEnd, songId),
+    play: (song: Song, songId?: string) => play(song, playlistEnd, songId),
     stop,
     forcePlay,
     currentSongId,
   }
-}
-
-const freq = [261, 293, 329, 349, 392, 440, 493, 523];
-
-export function senderSong(sender: number): Note[] {
-  const senderStr = sender.toString().padStart(4, "0");
-  const digits = [...senderStr].map(x => parseInt(x));
-  const song = digits.map((d, i) => ({
-    time: i*0.1,
-    length: 0.1,
-    frequency: freq[d],
-  }))
-  return song;
-}
-
-export function songToSignals(song: Note[]): number[] {
-  const signals = [];
-  signals.push(-577);
-  signals.push(-14);
-  for (const note of song) {
-    signals.push(-605003);
-    for (let number of [note.time, note.length, note.frequency]) {
-      number *= 1000;
-      if (number < 0) {
-        signals.push(-1);
-        number *= -1;
-      }
-      signals.push(~~(number / 1000))
-      if (~~(number % 1000) !== 0) {
-        signals.push(-10);
-        for (let i = (~~(number % 1000)).toString().length; i < 3; i++) {
-          signals.push(0);
-        }
-        signals.push(~~(number % 1000));
-      };
-      signals.push(-3);
-    }
-  }
-  if (signals.length > 2) signals.pop();
-  signals.push(-15);
-  return signals;
 }

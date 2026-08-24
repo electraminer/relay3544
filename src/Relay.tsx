@@ -7,10 +7,10 @@ import {
 } from './converter';
 import './Relay.css';
 import { Chat } from './Chat';
-import type { Pixel } from './Image';
+import type { Image } from './spoilers/Image';
 import type { DictEntry } from './Dictionary';
 import type { Relay, useRelaySocket } from './useRelaySocket';
-import type { AudioPlayer } from './Note';
+import type { AudioPlayer } from './AudioPlayer';
 
 function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
   const ranges = errors.filter((e) => e.end > e.start).sort((a, b) => a.start - b.start);
@@ -160,7 +160,7 @@ export function EditorPane(props: {
 
 export function ChatViewer(props: {
   dictionary: Map<number, DictEntry>,
-  onImage: (image: Pixel[]) => void,
+  onImage: (image: Image) => void,
   onDefine: (signal: number) => void,
   relay: ReturnType<typeof useRelaySocket>,
   channel: number | null,
@@ -189,9 +189,9 @@ export function ChatViewer(props: {
 
 export function RelayPane(props: {
   dictionary: Map<number, DictEntry>,
-  onImage: (image: Pixel[]) => void,
+  onImage: (image: Image) => void,
   onDefine: (signal: number) => void,
-  onSend: (message: number[], channel?: number) => void,
+  onSend: (message: number[], channel: number | null) => void,
   relay: Relay,
   channel: number | null,
   audio: AudioPlayer,
@@ -208,13 +208,7 @@ export function RelayPane(props: {
         />
       <EditorPane
         dictionary={props.dictionary}
-        onSend={msg => {
-          if (props.channel === null || props.channel === -65536) {
-            props.onSend(msg);
-          } else {
-            props.onSend(msg, props.channel)
-          }
-        }}
+        onSend={msg => props.onSend(msg, props.channel)}
         canSend={props.relay.status === "readwrite"}
         />
     </div>

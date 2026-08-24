@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Message } from './Message';
 import { codeFromDecimal, codeToDecimal, isValidCode, loadCode, randomCode, saveCode } from './Code';
-import { senderSong, type AudioPlayer } from './Note';
+import { type AudioPlayer } from './AudioPlayer';
+import { Song } from './spoilers/Song';
+import { getMessageChannel } from './spoilers/Channel';
 
 const SOCKET_URL = 'wss://dscr-relay.dixonary.co.uk/';
 const MESSAGES_STORAGE_KEY = 'relay-messages';
@@ -128,7 +130,7 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
             receivedAt: Date.now(),
             tags: [],
           };
-          const messageChannel = message.signals[0] === -65535 ? message.signals[1] : null;
+          const messageChannel = getMessageChannel(message.signals);
           const channelOpen = messageChannel === null || openChannelsRef.current.includes(messageChannel);
           
           const recentMessages = messages.slice(-10);
@@ -140,7 +142,7 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
           if (soundEnabledRef.current
             && channelOpen
             && audioRef.current.currentSongId === null) {
-            audioRef.current.play(senderSong(message.sender));
+            audioRef.current.play(Song.senderSong(message.sender));
           }
           setMessages(m => [...m, message]);
         }

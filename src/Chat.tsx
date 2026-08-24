@@ -1,11 +1,13 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { filterChannels, processImages, processSongs, type Message } from "./Message";
-import { imageToSignals, type Pixel } from "./Image";
+import { type Message } from "./Message";
 import type { DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
-import { senderSong, songToSignals, type AudioPlayer } from "./Note";
+import { type AudioPlayer } from "./AudioPlayer";
 import { decompile, separator } from "./converter";
-import { processCommands } from "./Command";
+import { processCommands } from "./spoilers/Command";
+import { processSongs, Song } from "./spoilers/Song";
+import { processImages, type Image } from "./spoilers/Image";
+import { displayedInsideChannel, filterChannels } from "./spoilers/Channel";
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
@@ -18,7 +20,7 @@ export function Chat(props: {
   channel: number | null,
   online: Set<number>,
   onSelectSignal: (signal: number) => void,
-  onViewImage: (image: Pixel[]) => void,
+  onViewImage: (image: Image) => void,
   audio: AudioPlayer,
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_MESSAGE_COUNT);
@@ -96,8 +98,7 @@ export function Chat(props: {
     >
       {withSongs.map((message,i) => <Message key={i}
         message={
-          (props.channel === null || props.channel === -65536)
-            ? message : {...message, signals: message.signals.slice(2)}
+          {...message, signals: displayedInsideChannel(message.signals, props.channel)}
         }
         dictionary={props.dictionary}
         self={props.self}
@@ -121,7 +122,7 @@ export function Message(props: {
   online: Set<number>,
   self: number,
   onSelectSignal: (signal: number) => void,
-  onViewImage: (image: Pixel[]) => void,
+  onViewImage: (image: Image) => void,
   audio: AudioPlayer,
 }): React.ReactNode {
   const messageId = `${props.message.receivedAt} ${props.message.id}`
@@ -151,7 +152,7 @@ export function Message(props: {
     {props.message.image && <span className="message-button message-viewimage"
       onClick={() =>
         navigator.clipboard.writeText(decompile(
-          imageToSignals(props.message.image!).join(" "),
+          props.message.image!.toSignals().join(" "),
           props.dictionary,
         ))}
     ><span className="material-symbols-outlined">content_copy</span></span>}
@@ -169,7 +170,7 @@ export function Message(props: {
     {props.message.song && <span className="message-button message-playsong"
       onClick={() =>
         navigator.clipboard.writeText(decompile(
-          songToSignals(props.message.song!).join(" "),
+          props.message.song!.toSignals().join(" "),
           props.dictionary,
         ))}
     ><span className="material-symbols-outlined">content_copy</span></span>}
@@ -183,7 +184,7 @@ export function Sender(props: {
 }): React.ReactNode {
   const senderCode = props.sender.toString().padStart(4, "0");
   return <span className="sender"
-    onClick={() => props.audio.forcePlay(senderSong(props.sender))}
+    onClick={() => props.audio.forcePlay(Song.senderSong(props.sender))}
     style={(() => {
       const code = [...senderCode].map(x => parseInt(x));
       return {
