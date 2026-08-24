@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  
+
   overflow: none;
 }
 
@@ -194,6 +194,10 @@ textarea.invalid {
 .message--self .message-time {
   background-color: var(--color-grayed);
   color: var(--color-background);
+}
+
+.message:not(.message--command, .message--image, .message--song, .message--secret) .text-signal {
+  color: var(--text-signal-color);
 }
 
 .sender {

@@ -9,6 +9,11 @@ export type DictEntry = {
   before: string,
   after: string,
   double: string,
+  color: string,
+  bold: boolean,
+  italic: boolean,
+  underline: boolean,
+  strikethrough: boolean,
   notes: string,
 }
 
@@ -27,7 +32,20 @@ function fromFormatMode(fmt: any) {
   return " ";
 }
 
-type EditDict = [string, string, string, string, string, string][];
+type EditDictEntry = [
+  def: string,
+  desc: string,
+  before: string,
+  after: string,
+  double: string,
+  notes: string,
+  color: string,
+  bold: boolean,
+  italic: boolean,
+  underline: boolean,
+  strikethrough: boolean,
+];
+type EditDict = EditDictEntry[];
 
 function exportDict(dict: EditDict) {
   const filtered = dict.filter(e => Number.isInteger(parseInt(e[0])));
@@ -42,7 +60,12 @@ function exportDict(dict: EditDict) {
         desc: e[5],
         formatMode: toFormatMode(e[2]),
         formatModeAfter: toFormatMode(e[3]),
-        breakOnDouble: e[4] !== "",
+        breakOnDouble: e[4] !== '',
+        color: e[6],
+        bold: Boolean(e[7]),
+        italic: Boolean(e[8]),
+        underline: Boolean(e[9]),
+        strikethrough: Boolean(e[10]),
       })),
     },
     id: 1,
@@ -68,7 +91,12 @@ function importDict(json: string): EditDict {
       fromFormatMode(imported.descDict?.values?.[i]?.formatModeAfter),
       imported.descDict?.values?.[i]?.breakOnDouble ? "\n" : "",
       String(imported.descDict?.values?.[i]?.desc),
-    ])
+      String(imported.descDict?.values?.[i]?.color ?? '#ffffff'),
+      imported.descDict?.values?.[i]?.bold ?? false,
+      imported.descDict?.values?.[i]?.italic ?? false,
+      imported.descDict?.values?.[i]?.underline ?? false,
+      imported.descDict?.values?.[i]?.strikethrough ?? false,
+    ]);
   }
   return dict;
 }
@@ -87,11 +115,11 @@ export function Dictionary(props: {
 
   const [dict, setDict] = useState<EditDict>(
     () => {
-      try {
+    try {
         return (JSON.parse(localStorage.getItem(DICT_KEY)!) ?? []);
-      } catch (e) {
-        return [];
-      }
+    } catch (e) {
+      return [];
+    }
     }
   );
 
@@ -108,6 +136,11 @@ export function Dictionary(props: {
           after: def[3],
           double: def[4],
           notes: def[5],
+          color: def[6],
+          bold: def[7],
+          italic: def[8],
+          underline: def[9],
+          strikethrough: def[10],
         });
       } catch (e) {
         // Skip the pair if it is invalid
@@ -129,6 +162,20 @@ export function Dictionary(props: {
     }
   }
 
+  function toggleBoolCell(row: number, col: number) {
+    return (prev: EditDict): EditDict => {
+      return [
+        ...prev.slice(0, row),
+        [
+          ...prev[row].slice(0, col),
+          !prev[row][col],
+          ...prev[row].slice(col + 1),
+        ],
+        ...prev.slice(row + 1),
+      ] as any;
+    };
+  }
+
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   function addRow(signal?: number) {
@@ -139,7 +186,12 @@ export function Dictionary(props: {
       " ",
       "",
       "",
-    ]]);
+      '#ffffff',
+      false,
+      false,
+      false,
+      false,
+    ] satisfies EditDict[number]]);
 
     window.setTimeout(() => {
       const newEditor = containerRef.current!.children.item(containerRef.current!.childElementCount - 2);
@@ -239,10 +291,66 @@ export function Dictionary(props: {
           <button className="dict-editor-format-choice" disabled={focus<0 || dict[focus][i]==="\n\n"}
             onClick={() => changeDict(updateCell(focus, i, "\n\n"))}>
             2</button>
-          <input className="dict-editor-format" value={focus<0 ? "" : dict[focus][i]} disabled={focus<0}
+          <input className="dict-editor-format" value={focus<0 ? "" : dict[focus][i] as string} disabled={focus<0}
             onChange={e => changeDict(updateCell(focus, i, e.currentTarget.value))}/>
         </div>
       )}
+      <div className="dict-editor-controls">
+        <div className="dict-editor-format-label">Color</div>
+        <input
+          type="text"
+          className="dict-editor-format"
+          value={focus < 0 ? '#ffffff' : dict[focus][6]}
+          disabled={focus < 0}
+          onChange={(e) => changeDict(updateCell(focus, 6, e.target.value))}
+        />
+        <input
+          className="dict-editor-format-color-picker"
+          type="color"
+          value={focus < 0 ? '' : dict[focus][6]}
+          disabled={focus < 0}
+          onChange={(e) => changeDict(updateCell(focus, 6, e.target.value))}
+        />
+      </div>
+      <div className="dict-editor-controls">
+        <div className="dict-editor-format-label">Style</div>
+        <button
+          className={
+            'dict-editor-format-toggle ' +
+            (focus < 0 || dict[focus][7] ? 'selected' : '')
+          }
+          onClick={() => changeDict(toggleBoolCell(focus, 7))}
+        >
+          <span className="material-symbols-outlined">format_bold</span>
+        </button>
+        <button
+          className={
+            'dict-editor-format-toggle ' +
+            (focus < 0 || dict[focus][8] ? 'selected' : '')
+          }
+          onClick={() => changeDict(toggleBoolCell(focus, 8))}
+        >
+          <span className="material-symbols-outlined">format_italic</span>
+        </button>
+        <button
+          className={
+            'dict-editor-format-toggle ' +
+            (focus < 0 || dict[focus][9] ? 'selected' : '')
+          }
+          onClick={() => changeDict(toggleBoolCell(focus, 9))}
+        >
+          <span className="material-symbols-outlined">format_underlined</span>
+        </button>
+        <button
+          className={
+            'dict-editor-format-toggle ' +
+            (focus < 0 || dict[focus][10] ? 'selected' : '')
+          }
+          onClick={() => changeDict(toggleBoolCell(focus, 10))}
+        >
+          <span className="material-symbols-outlined">strikethrough_s</span>
+        </button>
+      </div>
       <textarea className="dict-editor-notes" value={focus<0 ? "" : dict[focus][5]} disabled={focus<0}
         spellCheck={false}
         placeholder="Notes"

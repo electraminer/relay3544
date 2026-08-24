@@ -15,6 +15,9 @@
 .dict-editor-controls button {
   font-size: var(--font-size-small);
 }
+.dict-editor-controls .material-symbols-outlined {
+  font-size: 20px !important;
+}
 
 .dict-editor-detail {
   display: flex;
@@ -44,6 +47,10 @@
   font-size: var(--font-size-small);
   background: var(--color-background);
   border: 1px solid var(--color-grayed);
+}
+.dict-editor-format-color-picker {
+  border: 0;
+  padding: 0;
 }
 
 .dict-editor-notes {
