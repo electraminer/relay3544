@@ -22,7 +22,6 @@ export function useAudioPlayer() {
 
   const [playlistEnd, setPlaylistEnd] = React.useState(-1);
   const [currentTimeout, setCurrentTimeout] = React.useState<number | null>(null);
-  const [counter, setCounter] = React.useState(0);
   const [currentSongId, setCurrentSongId] = React.useState<string | null>(null);
 
   useEffect(() => {
@@ -60,8 +59,6 @@ export function useAudioPlayer() {
       }, Math.ceil((end - now)*1000));
       return newTimeout;
     });
-
-    setCounter(counter => counter + 1);
   }
 
   async function forcePlay(song: Song, songId?: string) {

@@ -208,7 +208,14 @@ export function Text(props: {
   function textSignalStyle(signal: number): object {
     const style: Record<string, string | undefined> = {};
     const key = signal >= 0 ? NUMBER_STYLING_FREQUENCY : !props.dictionary.has(signal) ? -UNKNOWN_STYLING_FREQUENCY : signal;
-    style["color"] = props.dictionary.get(key)?.color;
+    
+    if (props.dictionary.get(key)?.invert) {
+      style["background-color"] = props.dictionary.get(key)?.color;
+      style["color"] = "var(--color-background)";
+    } else {
+      style["color"] = props.dictionary.get(key)?.color;
+    }
+    
     style.fontWeight = props.dictionary.get(key)?.bold ? "bold" : undefined;
     style.fontStyle = props.dictionary.get(key)?.italic ? "italic" : undefined;
     style.textDecoration = [

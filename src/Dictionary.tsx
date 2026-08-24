@@ -14,6 +14,7 @@ export type DictEntry = {
   italic: boolean,
   underline: boolean,
   strikethrough: boolean,
+  invert: boolean,
   notes: string,
 }
 
@@ -44,6 +45,7 @@ type EditDictEntry = [
   italic: boolean,
   underline: boolean,
   strikethrough: boolean,
+  invert: boolean,
 ];
 type EditDict = EditDictEntry[];
 
@@ -96,6 +98,7 @@ function importDict(json: string): EditDict {
       imported.descDict?.values?.[i]?.italic ?? false,
       imported.descDict?.values?.[i]?.underline ?? false,
       imported.descDict?.values?.[i]?.strikethrough ?? false,
+      imported.descDict?.values?.[i]?.invert ?? false,
     ]);
   }
   return dict;
@@ -129,6 +132,7 @@ export function Dictionary(props: {
             x[8] ?? false,
             x[9] ?? false,
             x[10] ?? false,
+            x[11] ?? false,
           ]);
     } catch (e) {
       return [];
@@ -154,6 +158,7 @@ export function Dictionary(props: {
           italic: def[8],
           underline: def[9],
           strikethrough: def[10],
+          invert: def[11],
         });
       } catch (e) {
         // Skip the pair if it is invalid
@@ -200,6 +205,7 @@ export function Dictionary(props: {
       "",
       "",
       '#ffffff',
+      false,
       false,
       false,
       false,
@@ -282,7 +288,8 @@ export function Dictionary(props: {
       cellStyle={(row, col) => {
         if (col === 0) return;
         return {
-          color: dict[row][6],
+          color: dict[row][11] ? "black" : dict[row][6],
+          backgroundColor: dict[row][11] ? dict[row][6] : "black",
           fontWeight: dict[row][7] ? 'bold' : undefined,
           fontStyle: dict[row][8] ? 'italic' : undefined,
           textDecoration: [
@@ -334,13 +341,11 @@ export function Dictionary(props: {
         <div className="dict-editor-format-color-picker">
           <input
             type="color"
-          value={focus < 0 ? '#ffffff' : dict[focus][6]}
+            value={focus < 0 ? '#ffffff' : dict[focus][6]}
             disabled={focus < 0}
             onChange={(e) => changeDict(updateCell(focus, 6, e.target.value))}
             />
-          <span className="material-symbols-outlined"
-            style={{color: focus < 0 ? undefined : dict[focus][6]}}
-          >colors</span>
+          <span className="material-symbols-outlined">colors</span>
         </div>
         <button
           className={'dict-editor-format-button'}
@@ -386,6 +391,15 @@ export function Dictionary(props: {
           onClick={() => changeDict(toggleBoolCell(focus, 10))}
         >
           <span className="material-symbols-outlined">strikethrough_s</span>
+        </button>
+        <button
+          className={
+            'dict-editor-format-toggle ' +
+            (focus < 0 || dict[focus][11] ? 'selected' : '')
+          }
+          onClick={() => changeDict(toggleBoolCell(focus, 11))}
+        >
+          <span className="material-symbols-outlined">invert_colors</span>
         </button>
       </div>
       <textarea className="dict-editor-notes" value={focus<0 ? "" : dict[focus][5]} disabled={focus<0}
