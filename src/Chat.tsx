@@ -1,9 +1,9 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import { type Message } from "./Message";
-import type { DictEntry } from "./Dictionary";
+import { entryStyle, type DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
 import { type AudioPlayer } from "./AudioPlayer";
-import { decompile, separator } from "./converter";
+import { decompile, doubleSeparator, separator } from "./converter";
 import { processCommands } from "./spoilers/Command";
 import { processSongs, Song } from "./spoilers/Song";
 import { processImages, type Image } from "./spoilers/Image";
@@ -100,20 +100,20 @@ export function Chat(props: {
         message={
           {...message, signals: displayedInsideChannel(message.signals, props.channel)}
         }
-        dictionary={props.dictionary}
-        self={props.self}
-        online={props.online}
-        onSelectSignal={props.onSelectSignal}
-        onViewImage={props.onViewImage}
-        audio={props.audio}
+            dictionary={props.dictionary}
+            self={props.self}
+            online={props.online}
+            onSelectSignal={props.onSelectSignal}
+            onViewImage={props.onViewImage}
+            audio={props.audio}
       />)}
+      </div>
+      {isScrolling && (
+        <button className="scroll-to-bottom" onClick={handleScrollToBottom}>
+          ↓ {unread}
+        </button>
+      )}
     </div>
-    {isScrolling && (
-      <button className="scroll-to-bottom" onClick={handleScrollToBottom}>
-        ↓ {unread}
-      </button>
-    )}
-  </div>
 }
 
 export function Message(props: {
@@ -130,51 +130,51 @@ export function Message(props: {
       ${props.message.tags.map(t => `message--${t}`).join(" ")}
       ${props.message.sender === props.self && "message--self"}
   `}>
-    <TooltipWrap
+      <TooltipWrap
       tooltip={new Date(props.message.receivedAt)
         .toLocaleString()}>
       <span className="message-time">{props.message.id.toString().padStart(3, "0")}</span>
-    </TooltipWrap>
+      </TooltipWrap>
     <TooltipWrap onClick={() => props.onSelectSignal(props.message.sender)}
       tooltip={props.message.sender}>
       <Sender audio={props.audio} sender={props.message.sender} dictionary={props.dictionary}/>
-    </TooltipWrap>
-    <Text
-      audio={props.audio}
-      signals={props.message.signals}
-      dictionary={props.dictionary}
-      online={props.online}
-      onSelectSignal={props.onSelectSignal}
+      </TooltipWrap>
+      <Text
+        audio={props.audio}
+        signals={props.message.signals}
+        dictionary={props.dictionary}
+        online={props.online}
+        onSelectSignal={props.onSelectSignal}
       />
     {props.message.image && <span className="message-button message-viewimage"
-      onClick={() => props.onViewImage(props.message.image!)}
+          onClick={() => props.onViewImage(props.message.image!)}
     ><span className="material-symbols-outlined">visibility</span></span>}
     {props.message.image && <span className="message-button message-viewimage"
-      onClick={() =>
+          onClick={() =>
         navigator.clipboard.writeText(decompile(
-          props.message.image!.toSignals().join(" "),
-          props.dictionary,
+                props.message.image!.toSignals().join(" "),
+                props.dictionary,
         ))}
     ><span className="material-symbols-outlined">content_copy</span></span>}
     {props.message.song && <span className="message-button message-playsong"
-      onClick={() => {
-        if (props.audio.currentSongId === messageId) {
-          props.audio.stop();
-        } else {
-          props.audio.forcePlay(props.message.song!, messageId);
-        }
-      }}
+          onClick={() => {
+            if (props.audio.currentSongId === messageId) {
+              props.audio.stop();
+            } else {
+              props.audio.forcePlay(props.message.song!, messageId);
+            }
+          }}
     ><span className="material-symbols-outlined">
       {props.audio.currentSongId === messageId ? `music_note_2` : `play_arrow`}
     </span></span>}
     {props.message.song && <span className="message-button message-playsong"
-      onClick={() =>
+          onClick={() =>
         navigator.clipboard.writeText(decompile(
-          props.message.song!.toSignals().join(" "),
-          props.dictionary,
+                props.message.song!.toSignals().join(" "),
+                props.dictionary,
         ))}
     ><span className="material-symbols-outlined">content_copy</span></span>}
-  </div>
+    </div>
 }
 
 export function Sender(props: {
@@ -184,14 +184,14 @@ export function Sender(props: {
 }): React.ReactNode {
   const senderCode = props.sender.toString().padStart(4, "0");
   return <span className="sender"
-    onClick={() => props.audio.forcePlay(Song.senderSong(props.sender))}
-    style={(() => {
+      onClick={() => props.audio.forcePlay(Song.senderSong(props.sender))}
+      style={(() => {
       const code = [...senderCode].map(x => parseInt(x));
-      return {
+        return {
         backgroundColor: `rgb(${code[1]*2*(7-code[0])}, ${code[2]*2*(7-code[0])}, ${code[3]*2*(7-code[0])}`,
         color: `rgb(${code[1]*24+64}, ${code[2]*16+64}, ${code[3]*24+64})`,
-      };
-    })()}
+        };
+      })()}
   >{props.dictionary.get(props.sender)?.def ?? senderCode}</span>
 }
 
@@ -202,24 +202,32 @@ export function Text(props: {
   audio: AudioPlayer,
   onSelectSignal: (signal: number) => void,
 }): React.ReactNode {
+  function textSignalStyle(signal: number): object {
+    if (!props.dictionary.has(signal)) {
+      signal = (signal < 0) ? -Infinity : Infinity;
+    }
+    return entryStyle(props.dictionary.get(signal)!);
+  }
   return <span className="text">
     {props.signals.map((signal, i) => <Fragment key={i}>
       <TooltipWrap onClick={() => {
-        const isHuman = signal >= 10 && props.online.has(signal);
+              const isHuman = signal >= 10 && props.online.has(signal);
         if (!props.dictionary.has(signal) && !isHuman && signal >= 0) return;
-        props.onSelectSignal(signal);
+              props.onSelectSignal(signal);
       }} tooltip={signal}>
         {props.online.has(signal) && signal >= 10 ?
           <Sender audio={props.audio} sender={signal} dictionary={props.dictionary}/>
         :
-          <span className="text-signal">{props.dictionary.get(signal)?.def ?? signal}</span>
+          <span className="text-signal" style={textSignalStyle(signal)}>{props.dictionary.get(signal)?.def ?? signal}</span>
         }
-      </TooltipWrap>
+          </TooltipWrap>
       {i < props.signals.length && <span>
         {separator(signal, props.signals[i+1], props.dictionary)}
       </span>}
-      {i > 0 && signal === props.signals[i-1] && <span>{props.dictionary.get(signal)?.double}</span>}
-    </Fragment>
+      {i > 0 && <span>
+        {doubleSeparator(props.signals[i-1], signal, props.dictionary)}
+      </span>}
+        </Fragment>
   )}
   </span>;
 }

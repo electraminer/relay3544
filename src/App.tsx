@@ -8,7 +8,7 @@ import './App.css';
 import { Toolbar } from './Toolbar';
 import { RelayPane } from './Relay';
 import { useRelaySocket } from './useRelaySocket';
-import { Dictionary, type DictEntry, type DictionaryHandle } from './Dictionary';
+import { DEFAULT_DICTIONARY, Dictionary, type DictEntry, type DictionaryHandle } from './Dictionary';
 import { Text } from './Chat';
 import { useAudioPlayer } from './AudioPlayer';
 import { Image } from './spoilers/Image';
@@ -120,7 +120,7 @@ function App() {
     return { model, dictBorderId, imageBorderId, dictOpen, imageOpen, openChannels: getOpenChannels(model) };
   });
   const [image, setImage] = useState<Image>(Image.empty());
-  const [dictMap, setDict] = useState<Map<number, DictEntry>>(new Map());
+  const [dictMap, setDict] = useState<Map<number, DictEntry>>(DEFAULT_DICTIONARY);
   const dictionaryRef = useRef<DictionaryHandle>(null);
   const layoutRef = useRef<ILayoutApi>(null);
   const [dictOpen, setDictOpen] = useState(initialDictOpen);

@@ -3,17 +3,20 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .dict-editor-controls {
   display: flex;
   flex-direction: row;
-  gap: 16px;
+  gap: 8px;
 }
 
 .dict-editor-controls button {
   font-size: var(--font-size-small);
+}
+.dict-editor-controls .material-symbols-outlined {
+  font-size: 20px !important;
 }
 
 .dict-editor-detail {
@@ -32,8 +35,14 @@
   font-size: var(--font-size-small);
   padding-top: 2px;
 }
+.dict-editor-format-signal {
+  flex: 1;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
+  padding-top: 2px;
+}
 .dict-editor-format-choice {
-  min-width: 20px;
+  min-width: 24px;
   flex: 0;
 }
 .dict-editor-format {
@@ -44,6 +53,55 @@
   font-size: var(--font-size-small);
   background: var(--color-background);
   border: 1px solid var(--color-grayed);
+}
+.dict-editor-format-color-picker {
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  position: relative;
+  width: 24px;
+  flex: none;
+}
+
+.dict-editor-format-color-picker input {
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  min-width: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+.dict-editor-format-color-picker .material-symbols-outlined {
+  position: absolute;
+  top: 7.5%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: black;
+  pointer-events: none;
+}
+
+.dict-editor-format-button {
+  width: 24px;
+  flex: none;
+  padding: 0;
+  text-align: left;
+}
+
+.dict-editor-format-toggle {
+  padding: 0;
+  text-align: left;
+  position: relative;
+}
+
+.dict-editor-format-toggle .material-symbols-outlined, .dict-editor-format-button .material-symbols-outlined {
+  line-height: 0;
+  position: relative;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .dict-editor-notes {

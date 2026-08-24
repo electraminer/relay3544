@@ -54,6 +54,7 @@ button:active {
   border-color: var(--color-text);
 }
 
-button:disabled {
+button:disabled,
+button.selected {
   background-color: var(--color-grayed);
 }
