@@ -8,7 +8,7 @@ import {
 } from "@strudel/webaudio";
 import React from "react";
 import { useEffect } from "react";
-import type { Song } from "./spoilers/Music";
+import type { Song } from "./spoilers/Song";
 
 export interface AudioPlayer {
   isPlaying: boolean;
@@ -66,11 +66,8 @@ export function useAudioPlayer() {
 
   async function forcePlay(song: Song, songId?: string) {
     await stop();
-    console.log("force");
     play(song, -1, songId);
   }
-
-  console.log(playlistEnd, currentTimeout, counter);
 
   return {
     isPlaying: currentTimeout !== null,

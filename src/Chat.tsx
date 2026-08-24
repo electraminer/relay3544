@@ -145,7 +145,6 @@ export function Message(props: {
         dictionary={props.dictionary}
         online={props.online}
         onSelectSignal={props.onSelectSignal}
-        messageTags={props.message.tags}
       />
     {props.message.image && <span className="message-button message-viewimage"
           onClick={() => props.onViewImage(props.message.image!)}
@@ -196,30 +195,20 @@ export function Sender(props: {
   >{props.dictionary.get(props.sender)?.def ?? senderCode}</span>
 }
 
-export const NUMBER_STYLING_FREQUENCY = 0;
-export const UNKNOWN_STYLING_FREQUENCY = NaN;
+export const NUMBER_STYLING_FREQUENCY = Infinity;
+export const UNKNOWN_STYLING_FREQUENCY = -Infinity;
 
 export function Text(props: {
   signals: number[],
   dictionary: Map<number, DictEntry>,
   online: Set<number>,
   audio: AudioPlayer,
-  messageTags: string[],
   onSelectSignal: (signal: number) => void,
 }): React.ReactNode {
   function textSignalStyle(signal: number): object {
-    if (
-      props.messageTags &&
-      (props.messageTags.includes("command") ||
-        props.messageTags.includes("image") ||
-        props.messageTags.includes("song") ||
-        props.messageTags.includes("secret"))
-    ) {
-      return {};
-    }
     const style: Record<string, string | undefined> = {};
     const key = signal >= 0 ? NUMBER_STYLING_FREQUENCY : !props.dictionary.has(signal) ? -UNKNOWN_STYLING_FREQUENCY : signal;
-    style["--text-signal-color"] = props.dictionary.get(key)?.color;
+    style["color"] = props.dictionary.get(key)?.color;
     style.fontWeight = props.dictionary.get(key)?.bold ? "bold" : undefined;
     style.fontStyle = props.dictionary.get(key)?.italic ? "italic" : undefined;
     style.textDecoration = [

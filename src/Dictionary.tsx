@@ -116,7 +116,20 @@ export function Dictionary(props: {
   const [dict, setDict] = useState<EditDict>(
     () => {
     try {
-        return (JSON.parse(localStorage.getItem(DICT_KEY)!) ?? []);
+        return (JSON.parse(localStorage.getItem(DICT_KEY)!) ?? [])
+          .map((x: any) => [
+            x[0] ?? "",
+            x[1] ?? "",
+            x[2] ?? " ",
+            x[3] ?? " ",
+            x[4] ?? "",
+            x[5] ?? "",
+            x[6] ?? '#ffffff',
+            x[7] ?? false,
+            x[8] ?? false,
+            x[9] ?? false,
+            x[10] ?? false,
+          ]);
     } catch (e) {
       return [];
     }
@@ -318,13 +331,23 @@ export function Dictionary(props: {
           disabled={focus < 0}
           onChange={(e) => changeDict(updateCell(focus, 6, e.target.value))}
         />
-        <input
-          className="dict-editor-format-color-picker"
-          type="color"
-          value={focus < 0 ? '' : dict[focus][6]}
-          disabled={focus < 0}
-          onChange={(e) => changeDict(updateCell(focus, 6, e.target.value))}
-        />
+        <div className="dict-editor-format-color-picker">
+          <input
+            type="color"
+          value={focus < 0 ? '#ffffff' : dict[focus][6]}
+            disabled={focus < 0}
+            onChange={(e) => changeDict(updateCell(focus, 6, e.target.value))}
+            />
+          <span className="material-symbols-outlined"
+            style={{color: focus < 0 ? undefined : dict[focus][6]}}
+          >colors</span>
+        </div>
+        <button
+          className={'dict-editor-format-button'}
+          onClick={() => changeDict(updateCell(focus, 6, "#ffffff"))}
+        >
+          <span className="material-symbols-outlined">format_color_reset</span>
+        </button>
       </div>
       <div className="dict-editor-controls">
         <div className="dict-editor-format-label">Style</div>

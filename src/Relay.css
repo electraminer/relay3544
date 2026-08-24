@@ -167,37 +167,42 @@ textarea.invalid {
   display: flex;
   gap: 10px;
   padding: 2px 0;
+  --time-color: var(--color-grayed)
 }
 
-.message--secret {
-  color: var(--color-grayed);
+.message--secret .text {
+  opacity: 50%;
 }
 
 .message--command {
-  color: #666600;
+  --time-color: #888800;
+}
+
+.message--command .text {
+  opacity: 25%
 }
 
 .message--image {
-  color: #AAAAFF;
+  --time-color: #8888FF;
 }
 
 .message--song {
-  color: #AAFFAA;
+  --time-color: #88FF88;
+}
+
+.message--song.message--image {
+  --time-color: #88FFFF;
 }
 
 .message-time {
   flex: none;
   padding-left: 2px;
-  color: var(--color-grayed);
+  color: var(--time-color);
 }
 
 .message--self .message-time {
-  background-color: var(--color-grayed);
+  background-color: var(--time-color);
   color: var(--color-background);
-}
-
-.message:not(.message--command, .message--image, .message--song, .message--secret) .text-signal {
-  color: var(--text-signal-color);
 }
 
 .sender {
@@ -258,11 +263,11 @@ textarea.invalid {
 }
 
 .message-viewimage {
-  background-color: #AAAAFF;
+  background-color: #8888FF;
 }
 
 .message-playsong {
-  background-color: #AAFFAA;
+  background-color: #88FF88;
 }
 
 .message-button .material-symbols-outlined {

@@ -91,7 +91,6 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
       ws.onopen = () => {
         attempt = 0;
         setStatus("joining");
-        console.log("joining send");
         socketRef.current?.send(`S,${codeToDecimal(code)}`);
       };
       ws.onclose = () => {
@@ -165,9 +164,7 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
       socketRef.current?.send(message);
     }
   }
-
-  console.log(status);
-
+  
   return {
     code,
     join,
