@@ -79,7 +79,7 @@ export class Song {
         // Note
         if (signals[i++] !== -605003) {
           valid = false;
-          continue;
+          break;
         }
         const note = [];
         for (let n = 0; n < 3; n++) {

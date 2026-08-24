@@ -111,7 +111,7 @@ export class Image {
         // Pixel
         if (signals[i++] !== -52) {
           valid = false;
-          continue;
+          break;
         };
         const pixel = [];
         for (let n = 0; n < 5; n++) {
