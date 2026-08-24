@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from "react";
 import "./Dictionary.css"
 import { Table } from "./Table";
 
@@ -265,6 +265,20 @@ export function Dictionary(props: {
           idClass = parseInt(dict[row][0]).toString();
         } catch (e) {};
         return `${focusClass} dict-editor-def-${idClass}`;
+      }}
+      cellStyle={(row, col) => {
+        if (col === 0) return;
+        return {
+          color: dict[row][6],
+          fontWeight: dict[row][7] ? 'bold' : undefined,
+          fontStyle: dict[row][8] ? 'italic' : undefined,
+          textDecoration: [
+            dict[row][9] ? 'underline' : '',
+            dict[row][10] ? 'line-through' : '',
+          ]
+            .join(' ')
+            .trim(),
+        } satisfies CSSProperties;
       }}
       />
     <div className="dict-editor-controls">
