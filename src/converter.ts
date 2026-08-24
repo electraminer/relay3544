@@ -22,13 +22,6 @@ export class MultiCompileError extends Error {
   }
 }
 
-export type DictionaryEntry = [number, string];
-export type Dictionary = DictionaryEntry[];
-
-export const DEFAULT_DICTIONARY: Dictionary = [
-
-]
-
 export function tokenize(value: string, dictionary: Map<number, DictEntry>): [number[], number] {
   const signalsAtChar: Record<number, number[] | undefined> = {0: []};
   let bestSignals: number[] = [];
@@ -92,17 +85,19 @@ export function decompile(value: string, dictionary: Map<number, DictEntry>): st
       let tokenStr = dictionary.get(number)?.def;
       if (!tokenStr) tokenStr = number.toString();
       
-      // Separator
-      if (i > 0) {
-        tokens += separator(parseInt(signals[i-1]), number, dictionary);
-      }
 
       tokens += tokenStr;
 
-      // Double Separator
-      if (i > 0 && parseInt(signals[i-1]) === number) {
-        tokens += dictionary.get(number)?.double ?? "";
+      // Separator
+      if (i < signals.length) {
+        tokens += separator(number, parseInt(signals[i+1]), dictionary);
       }
+
+      // Double Separator
+      if (i > 0) {
+        tokens += doubleSeparator(parseInt(signals[i-1]), number, dictionary);
+      }
+
     } catch (e) {
       errors.push(new CompileError(`${signal} is not a number`, 0, 0));
     }
@@ -114,11 +109,16 @@ export function decompile(value: string, dictionary: Map<number, DictEntry>): st
 }
 
 export function separator(signal1: number, signal2: number, dictionary: Map<number, DictEntry>) {
-  let after = dictionary.get(signal1)?.after ?? " ";
-  if (signal1 >= 0) after = "";
-  let before = dictionary.get(signal2)?.before ?? " ";
-  if (signal2 >= 0) before = "";
-  let sep = after + before;
-  if (after === before) sep = after;
+  let s1 = dictionary.get(signal1) ?? dictionary.get(signal1 < 0 ? -Infinity : Infinity)!;
+  let s2 = dictionary.get(signal2) ?? dictionary.get(signal2 < 0 ? -Infinity : Infinity)!;
+  let sep = s1.after + s2.before;
+  if (s1.after === s2.before) sep = s1.after;
+  if (sep.includes("\n")) return sep.replace(" ", "");
   return sep;
+}
+
+export function doubleSeparator(signal1: number, signal2: number, dictionary: Map<number, DictEntry>) {
+  if (signal1 !== signal2) return "";
+  let s2 = dictionary.get(signal2) ?? dictionary.get(signal2 < 0 ? -Infinity : Infinity)!;
+  return s2.double;
 }

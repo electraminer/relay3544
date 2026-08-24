@@ -3,13 +3,13 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .dict-editor-controls {
   display: flex;
   flex-direction: row;
-  gap: 16px;
+  gap: 8px;
 }
 
 .dict-editor-controls button {
@@ -31,6 +31,12 @@
 
 .dict-editor-format-label {
   min-width: 88px;
+  font-family: var(--font-main);
+  font-size: var(--font-size-small);
+  padding-top: 2px;
+}
+.dict-editor-format-signal {
+  flex: 1;
   font-family: var(--font-main);
   font-size: var(--font-size-small);
   padding-top: 2px;

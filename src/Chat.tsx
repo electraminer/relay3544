@@ -1,9 +1,9 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import { type Message } from "./Message";
-import type { DictEntry } from "./Dictionary";
+import { entryStyle, type DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
 import { type AudioPlayer } from "./AudioPlayer";
-import { decompile, separator } from "./converter";
+import { decompile, doubleSeparator, separator } from "./converter";
 import { processCommands } from "./spoilers/Command";
 import { processSongs, Song } from "./spoilers/Song";
 import { processImages, type Image } from "./spoilers/Image";
@@ -195,9 +195,6 @@ export function Sender(props: {
   >{props.dictionary.get(props.sender)?.def ?? senderCode}</span>
 }
 
-export const NUMBER_STYLING_FREQUENCY = Infinity;
-export const UNKNOWN_STYLING_FREQUENCY = -Infinity;
-
 export function Text(props: {
   signals: number[],
   dictionary: Map<number, DictEntry>,
@@ -206,25 +203,10 @@ export function Text(props: {
   onSelectSignal: (signal: number) => void,
 }): React.ReactNode {
   function textSignalStyle(signal: number): object {
-    const style: Record<string, string | undefined> = {};
-    const key = signal >= 0 ? NUMBER_STYLING_FREQUENCY : !props.dictionary.has(signal) ? -UNKNOWN_STYLING_FREQUENCY : signal;
-    
-    if (props.dictionary.get(key)?.invert) {
-      style["background-color"] = props.dictionary.get(key)?.color;
-      style["color"] = "var(--color-background)";
-    } else {
-      style["color"] = props.dictionary.get(key)?.color;
+    if (!props.dictionary.has(signal)) {
+      signal = (signal < 0) ? -Infinity : Infinity;
     }
-    
-    style.fontWeight = props.dictionary.get(key)?.bold ? "bold" : undefined;
-    style.fontStyle = props.dictionary.get(key)?.italic ? "italic" : undefined;
-    style.textDecoration = [
-      props.dictionary.get(key)?.underline ? "underline" : "",
-      props.dictionary.get(key)?.strikethrough ? "line-through" : "",
-    ]
-      .join(" ")
-      .trim();
-    return style;
+    return entryStyle(props.dictionary.get(signal)!);
   }
   return <span className="text">
     {props.signals.map((signal, i) => <Fragment key={i}>
@@ -242,7 +224,9 @@ export function Text(props: {
       {i < props.signals.length && <span>
         {separator(signal, props.signals[i+1], props.dictionary)}
       </span>}
-      {i > 0 && signal === props.signals[i-1] && <span>{props.dictionary.get(signal)?.double}</span>}
+      {i > 0 && <span>
+        {doubleSeparator(props.signals[i-1], signal, props.dictionary)}
+      </span>}
         </Fragment>
   )}
   </span>;
