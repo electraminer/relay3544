@@ -105,7 +105,7 @@ function exportDict(dict: EditDict, sigFmt: EditDictEntry, numFmt: EditDictEntry
         italic: Boolean(e[8]),
         underline: Boolean(e[9]),
         strikethrough: Boolean(e[10]),
-        invert: Boolean(e[10]),
+        invert: Boolean(e[11]),
       })),
     },
     id: 1,
