@@ -7,6 +7,9 @@ interface Note {
   frequency: number; // in hertz
 }
 
+const CONVERSION = 0.8069224
+const SONG_LEGACY_CHANGE_TIME = 1787676792000;
+
 export class Song {
   private notes: Note[];
 
@@ -45,7 +48,7 @@ export class Song {
     signals.push(-14);
     for (const note of this.notes) {
       signals.push(-605003);
-      for (let number of [note.time, note.length, note.frequency]) {
+      for (let number of [note.time / CONVERSION, note.length / CONVERSION, note.frequency * CONVERSION]) {
         number *= 1000;
         if (number < 0) {
           signals.push(-1);
@@ -67,7 +70,7 @@ export class Song {
     return signals;
   }
 
-  public static fromSignals(signals: number[]): [Song, number, number] | undefined {
+  public static fromSignals(signals: number[], legacy?: boolean): [Song, number, number] | undefined {
     // Look for song
     for (let songStart = 0; songStart < signals.length; songStart++) {
       if (signals[songStart] !== -577) continue;
@@ -108,6 +111,10 @@ export class Song {
           if (signals[i] === -3) {
             i++;
           }
+          if (!legacy) {
+            if (n === 0 || n === 1) number *= CONVERSION;
+            if (n === 2) number /= CONVERSION;
+          }
           note.push(number * sign);
         }
         notes.push({time: note[0], length: note[1], frequency: note[2]});
@@ -121,7 +128,8 @@ export class Song {
 export function processSongs(messages: Message[]): Message[] {
   return messages
     .map(m => {
-      const songResult = Song.fromSignals(m.signals);
+      console.log(m.receivedAt, SONG_LEGACY_CHANGE_TIME)
+      const songResult = Song.fromSignals(m.signals, m.receivedAt < SONG_LEGACY_CHANGE_TIME);
       if (!songResult) return m;
       const [song, start, end] = songResult;
       const cutSong = [...m.signals.slice(0, start + 2), -25, ...m.signals.slice(end)];
