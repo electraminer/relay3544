@@ -1,12 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import type { Message } from './Message';
-import { codeFromDecimal, codeToDecimal, isValidCode, loadCode, randomCode, saveCode } from './Code';
-import { type AudioPlayer } from './AudioPlayer';
-import { Song } from './spoilers/Song';
-import { getMessageChannel } from './spoilers/Channel';
+import { useEffect, useRef, useState } from "react";
+import type { Message } from "./Message";
+import {
+  codeFromDecimal,
+  codeToDecimal,
+  isValidCode,
+  loadCode,
+  randomCode,
+  saveCode,
+} from "./Code";
+import { type AudioPlayer } from "./AudioPlayer";
+import { Song } from "./spoilers/Song";
+import { getMessageChannel } from "./spoilers/Channel";
 
-const SOCKET_URL = 'wss://dscr-relay.dixonary.co.uk/';
-const MESSAGES_STORAGE_KEY = 'relay-messages';
+const SOCKET_URL = "wss://dscr-relay.dixonary.co.uk/";
+const MESSAGES_STORAGE_KEY = "relay-messages";
 
 export type SocketStatus = "connecting" | "joining" | "readwrite" | "readonly";
 
@@ -24,18 +31,20 @@ function loadMessages(): Message[] {
 }
 
 export interface Relay {
-  code: number,
-  join: (code: number) => void,
-  status: SocketStatus,
-  online: number[],
-  messages: Message[],
-  send: (msg: number[]) => void,
-  soundEnabled: boolean,
-  setSoundEnabled: (enabled: boolean) => void,
+  code: number;
+  join: (code: number) => void;
+  status: SocketStatus;
+  online: number[];
+  messages: Message[];
+  send: (msg: number[]) => void;
+  soundEnabled: boolean;
+  setSoundEnabled: (enabled: boolean) => void;
 }
 
-
-export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Relay {
+export function useRelaySocket(
+  openChannels: number[],
+  audio: AudioPlayer,
+): Relay {
   const socketRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<SocketStatus>("connecting");
 
@@ -46,7 +55,7 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
   }, [messages]);
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(
-    localStorage.getItem("relay-notifications") !== "false"
+    localStorage.getItem("relay-notifications") !== "false",
   );
   const soundEnabledRef = useRef(soundEnabled);
   useEffect(() => {
@@ -63,7 +72,6 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
   useEffect(() => {
     audioRef.current = audio;
   }, [audio]);
-
 
   const [code, setCode] = useState<number>(() => loadCode());
   useEffect(() => {
@@ -103,7 +111,7 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
       ws.onerror = () => setStatus("connecting");
       ws.onmessage = (event) => {
         const [type, ...params] = (event.data as string).split(",");
-        const numbers = params.map(x => parseInt(x));
+        const numbers = params.map((x) => parseInt(x));
         if (type === "U") {
           // Blocked, but try connecting with a random code (readonly)
           setStatus("readonly");
@@ -130,20 +138,29 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
             tags: [],
           };
           const messageChannel = getMessageChannel(message.signals);
-          const channelOpen = messageChannel === null || openChannelsRef.current.includes(messageChannel);
-          
-          const recentMessages = messages.slice(-10);
-          if (recentMessages.find(m =>
-            m.id === message.id
-            && m.sender === message.sender
-            && m.signals.join(" ") === message.signals.join(" "))) return;
+          const channelOpen =
+            messageChannel === null ||
+            openChannelsRef.current.includes(messageChannel);
 
-          if (soundEnabledRef.current
-            && channelOpen
-            && audioRef.current.currentSongId === null) {
+          const recentMessages = messages.slice(-10);
+          if (
+            recentMessages.find(
+              (m) =>
+                m.id === message.id &&
+                m.sender === message.sender &&
+                m.signals.join(" ") === message.signals.join(" "),
+            )
+          )
+            return;
+
+          if (
+            soundEnabledRef.current &&
+            channelOpen &&
+            audioRef.current.currentSongId === null
+          ) {
             audioRef.current.play(Song.senderSong(message.sender));
           }
-          setMessages(m => [...m, message]);
+          setMessages((m) => [...m, message]);
         }
       };
     }
@@ -164,7 +181,7 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
       socketRef.current?.send(message);
     }
   }
-  
+
   return {
     code,
     join,

@@ -30,12 +30,12 @@ export class Song {
 
   public static senderSong(sender: number): Song {
     const senderStr = sender.toString().padStart(4, "0");
-    const digits = [...senderStr].map(x => parseInt(x));
+    const digits = [...senderStr].map((x) => parseInt(x));
     const notes = digits.map((d, i) => ({
-      time: i*0.1,
+      time: i * 0.1,
       length: 0.1,
       frequency: [261, 293, 329, 349, 392, 440, 493, 523][d],
-    }))
+    }));
     return new Song(notes);
   }
 
@@ -51,14 +51,14 @@ export class Song {
           signals.push(-1);
           number *= -1;
         }
-        signals.push(~~(number / 1000))
+        signals.push(~~(number / 1000));
         if (~~(number % 1000) !== 0) {
           signals.push(-10);
           for (let i = (~~(number % 1000)).toString().length; i < 3; i++) {
             signals.push(0);
           }
           signals.push(~~(number % 1000));
-        };
+        }
         signals.push(-3);
       }
     }
@@ -67,7 +67,9 @@ export class Song {
     return signals;
   }
 
-  public static fromSignals(signals: number[]): [Song, number, number] | undefined {
+  public static fromSignals(
+    signals: number[],
+  ): [Song, number, number] | undefined {
     // Look for song
     for (let songStart = 0; songStart < signals.length; songStart++) {
       if (signals[songStart] !== -577) continue;
@@ -92,7 +94,7 @@ export class Song {
           }
           while (signals[i] >= 0) {
             const digit = signals[i];
-            number *= Math.pow(10, digit.toString().length)
+            number *= Math.pow(10, digit.toString().length);
             number += digit;
             i++;
           }
@@ -100,7 +102,7 @@ export class Song {
             i++;
             while (signals[i] >= 0) {
               const digit = signals[i];
-              precision /= Math.pow(10, digit.toString().length)
+              precision /= Math.pow(10, digit.toString().length);
               number += precision * digit;
               i++;
             }
@@ -110,7 +112,7 @@ export class Song {
           }
           note.push(number * sign);
         }
-        notes.push({time: note[0], length: note[1], frequency: note[2]});
+        notes.push({ time: note[0], length: note[1], frequency: note[2] });
       }
       if (valid) return [new Song(notes), songStart, i];
     }
@@ -119,13 +121,16 @@ export class Song {
 }
 
 export function processSongs(messages: Message[]): Message[] {
-  return messages
-    .map(m => {
-      const songResult = Song.fromSignals(m.signals);
-      if (!songResult) return m;
-      const [song, start, end] = songResult;
-      const cutSong = [...m.signals.slice(0, start + 2), -25, ...m.signals.slice(end)];
+  return messages.map((m) => {
+    const songResult = Song.fromSignals(m.signals);
+    if (!songResult) return m;
+    const [song, start, end] = songResult;
+    const cutSong = [
+      ...m.signals.slice(0, start + 2),
+      -25,
+      ...m.signals.slice(end),
+    ];
 
-      return {...m, signals: cutSong, tags: [...m.tags, "song"], song}
-    });
+    return { ...m, signals: cutSong, tags: [...m.tags, "song"], song };
+  });
 }
