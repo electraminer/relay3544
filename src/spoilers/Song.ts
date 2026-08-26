@@ -72,63 +72,129 @@ export class Song {
 
   public static fromSignals(signals: number[], legacy?: boolean): [Song, number, number] | undefined {
     // Look for song
-    for (let songStart = 0; songStart < signals.length; songStart++) {
-      if (signals[songStart] !== -577) continue;
-      if (signals[songStart + 1] !== -14) continue;
-      let i = songStart + 2;
-      const notes: Note[] = [];
-      let valid = true;
-      while (signals[i] !== -15) {
-        // Note
-        if (signals[i++] !== -605003) {
-          valid = false;
-          break;
+    const i = new Peekable(signals);
+
+    while (i.peek() !== undefined) {
+      let songStart = i.position;
+      if (i.next() === -577) {
+        let notes = i.match(parseCollection(parseNote));
+        if (!notes) continue;
+        if (!legacy) {
+          notes = notes.map(n => ({
+            time: n.time * CONVERSION,
+            length: n.length * CONVERSION,
+            frequency: n.frequency * CONVERSION,
+          }));
         }
-        const note = [];
-        for (let n = 0; n < 3; n++) {
-          let sign = 1;
-          let number = 0;
-          let precision = 1;
-          if (signals[i] === -1) {
-            sign = -1;
-            i++;
-          }
-          while (signals[i] >= 0) {
-            const digit = signals[i];
-            number *= Math.pow(10, digit.toString().length)
-            number += digit;
-            i++;
-          }
-          if (signals[i] === -10) {
-            i++;
-            while (signals[i] >= 0) {
-              const digit = signals[i];
-              precision /= Math.pow(10, digit.toString().length)
-              number += precision * digit;
-              i++;
-            }
-          }
-          if (signals[i] === -3) {
-            i++;
-          }
-          if (!legacy) {
-            if (n === 0 || n === 1) number *= CONVERSION;
-            if (n === 2) number /= CONVERSION;
-          }
-          note.push(number * sign);
-        }
-        notes.push({time: note[0], length: note[1], frequency: note[2]});
+        return [new Song(notes), songStart, i.position-1];
       }
-      if (valid) return [new Song(notes), songStart, i];
     }
     return;
+  }
+}
+
+interface Peekable {
+}
+
+class Peekable {
+  signals: number[];
+  position: number;
+
+  constructor(signals: number[], position?: number) {
+    this.signals = signals;
+    this.position = position ?? 0;
+  }
+
+  peek(): number | undefined {
+    return this.signals[this.position];
+  }
+
+  next(): number | undefined {
+    return this.signals[this.position++];
+  }
+
+  match<T>(filter: (i: Peekable) => T | undefined): T | undefined {
+    let prevPosition = this.position;
+    const result = filter(this);
+    if (result === undefined) this.position = prevPosition;
+    return result;
+  }
+
+  matchSignal(filter: (signal: number) => boolean): number | undefined {
+    if (this.peek() !== undefined && filter(this.peek()!)) {
+      return this.next();
+    }
+  }
+
+  matchExact(signal?: number): boolean {
+    return this.matchSignal(s => s === signal) !== undefined;
+  }
+}
+
+function notNan(number: number): number | undefined {
+  return Number.isNaN(number) ? undefined : number;
+}
+
+function parseDigitString(i: Peekable): string {
+  let number = "";
+  let digit;
+  while ((digit = i.matchSignal(s => s >= 0)) !== undefined) {
+    number += digit.toString();
+  }
+  return number;
+}
+
+function parseNumber(i: Peekable): number | undefined {
+  let number = "";
+  if (i.matchExact(-1)) number += "-";
+  number += parseDigitString(i);
+  if (i.matchExact(-10)) number += ".";
+  number += parseDigitString(i);
+  return notNan(parseFloat(number));
+}
+
+function parseNote(i: Peekable): Note | undefined {
+  if (!i.matchExact(-605003)) return;
+
+  const time = i.match(parseNumber);
+  if (time === undefined) return;
+
+  if (!i.matchExact(-3)) return;
+
+  const length = i.match(parseNumber);
+  if (length === undefined) return;
+
+  if (!i.matchExact(-3)) return;
+
+  const frequency = i.match(parseNumber);
+  if (frequency === undefined) return;
+
+  return {time, length, frequency};
+}
+
+function parseCollection<T>(elem: (i: Peekable) => T | undefined): ((i: Peekable) => T[] | undefined) {
+  return i => {
+    if (!i.matchExact(-14)) return;
+
+    const collection = [];
+    while (!i.matchExact(-15)) {
+      const note = i.match(elem);
+      if (!note) return;
+      collection.push(note);
+      
+      // Pre-trailing-comma check
+      if (i.matchExact(-15)) return collection;
+
+      if (!i.matchExact(-3)) return;
+    }
+
+    return collection;
   }
 }
 
 export function processSongs(messages: Message[]): Message[] {
   return messages
     .map(m => {
-      console.log(m.receivedAt, SONG_LEGACY_CHANGE_TIME)
       const songResult = Song.fromSignals(m.signals, m.receivedAt < SONG_LEGACY_CHANGE_TIME);
       if (!songResult) return m;
       const [song, start, end] = songResult;
