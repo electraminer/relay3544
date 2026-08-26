@@ -14,7 +14,6 @@
 ☐ Add | formatting to dictionary
 ☐ Add link to DSVR
 ☐ Add music playlist/looping
-☐ .trim() lines
 ☐ change websocket connection
 ☐ spoiler tags / spoiler channels
 ☐ Minor fix on italic formatting
@@ -22,3 +21,4 @@
 ☐ Improve music somehow
 ☐ Display color formatting in message editor
 ☐ Display when call sign is conflicting (readonly)
+☐ Fix dict not loading before open

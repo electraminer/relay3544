@@ -7,8 +7,8 @@ interface Note {
   frequency: number; // in hertz
 }
 
-const CONVERSION = 0.8069224
-const SONG_LEGACY_CHANGE_TIME = 1787676792000;
+const CONVERSION = 0.8069224 // Songs are now in Alien units
+const SONG_LEGACY_CHANGE_TIME = 1787676792000; // Songs posted before this timestamp still use the legacy Human units
 
 export class Song {
   private notes: Note[];

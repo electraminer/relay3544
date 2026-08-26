@@ -11,7 +11,7 @@ export function getChannelCommand(signals: number[]): ChannelCommand | null {
     if (signals[0] === -65534 && signals.length === 2) {
         return {type: "join", channel: signals[1]};
     }
-    if (signals[1] === -65533 && signals.length === 2) {
+    if (signals[0] === -65533 && signals.length === 2) {
         return {type: "leave", channel: signals[1]};
     }
     return null;
