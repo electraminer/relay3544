@@ -114,6 +114,7 @@ function getSentenceFromPrepositions(prepositions: Preposition[], sender: number
     for (const prep of prepositions) {
         if (sentence.has(prep.marker)) throw new Error("Duplicate preposition");
         if (prep.value === null) throw new Error("Null value before end");
+        if (prep.marker === -86 && !sentence.has(null)) throw new Error("Wrong subj/obj order");
         sentence.set(prep.marker, prep.value);
     }
     return sentence;
@@ -125,8 +126,9 @@ function isHuman(subj: number[], sender: number): boolean {
     return false;
 }
 
-function getMessageId(obj: number[]): number {
+function getMessageId(obj: number[]): number | undefined {
     if (obj.length === 1 && obj[0] >= 0) return obj[0];
+    if (obj.length === 1 && obj[0] === -43) return undefined;
     if (obj.length === 2 && obj[0] === -43 && obj[1] >= 0) return obj[1];
     throw new Error("Object was not a message");
 }
@@ -151,8 +153,8 @@ function getActionFromSentence(sentence: Map<number | null, number[]>): Action {
 }
 
 function getCommandFromSentence(sentence: Map<number | null, number[]>, sender: number): Command {
-    const subj = sentence.get(-86);
-    if (!subj || !isHuman(subj, sender))
+    const subj = sentence.get(-86) ?? sentence.get(null);
+    if (subj && !isHuman(subj, sender))
         throw new Error("Cannot command on behalf of another");
     const obj = sentence.get(null);
     const target = obj ? getMessageId(obj) : undefined;
