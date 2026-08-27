@@ -32,6 +32,109 @@ export class Song {
     return end;
   }
 
+  private unitConvert(conversion: number) {
+    return new Song(this.notes.map(x => ({
+      time: x.time * conversion,
+      length: x.length * conversion,
+      frequency: x.frequency / conversion,
+    })));
+  }
+
+  private shift(time: number) {
+    return new Song(this.notes.map(x => ({
+      time: x.time + time,
+      length: x.length,
+      frequency: x.frequency,
+    })));
+  }
+
+  private scale(scale: number) {
+    return new Song(this.notes.map(x => ({
+      time: x.time * scale,
+      length: x.length * scale,
+      frequency: x.frequency,
+    })));
+  }
+
+  private append(song: Song) {
+    return new Song([
+      ...this.notes,
+      ...song.shift(this.length()).notes,
+    ])
+  }
+
+  static parseNote(i: Peekable<Song>): Note | undefined {
+    if (!i.matchExact(-605003)) return;
+
+    const time = i.match(parseNumber) ?? 0;
+    if (!i.matchExact(-3)) return;
+    const length = i.match(parseNumber) ?? 0;
+    if (!i.matchExact(-3)) return;
+    const frequency = i.match(parseNumber) ?? 0;
+
+    return {time, length, frequency};
+  }
+
+  static parseSongItem(i: Peekable<Song>): Song | undefined {
+    const note = i.match(Song.parseNote);
+    if (note) return new Song([note]);
+    const varDecl = i.match(Song.parseSongVarDecl);
+    if (varDecl) return varDecl;
+    const varValue = i.match(Song.parseSongVar);
+    if (varValue) return varValue;
+
+    return i.match(Song.parseSongGroup);
+  }
+
+  static parseSongChord(i: Peekable<Song>): Song | undefined {
+    const group = i.match(parseCollection(Song.parseSongItem, -3, false));
+    if (group) return new Song(group.flatMap(x => x.notes));
+  }
+
+  static parseSongSequence(i: Peekable<Song>): Song | undefined {
+    const group = i.match(parseCollection(Song.parseSongChord, -122, true));
+    if (group) return group.reduce((a, b) => a.append(b));
+  }
+
+  static parseSongGroup(i: Peekable<Song>): Song | undefined {
+    return i.match(parseGroup(Song.parseSongSequence));
+  }
+
+  static parseSongVarDecl(i: Peekable<Song>): Song | undefined {
+    if (!i.matchExact(-11)) return;
+    const varIndex = i.match(parseNumber);
+    if (varIndex === undefined) return;
+    const group = i.match(Song.parseSongGroup);
+    if (!group) return;
+    if (!i.setVar(varIndex, group)) return;
+    return group;
+  }
+
+  static parseSongVar(i: Peekable<Song>): Song | undefined {
+    if (!i.matchExact(-11)) return;
+    const varIndex = i.match(parseNumber);
+    if (varIndex === undefined) return;
+    return i.getVar(varIndex);
+  }
+
+  public static fromSignals(signals: number[], legacy?: boolean): [Song, number, number, number[]] | undefined {
+    // Look for song
+    const i = new Peekable<Song>(signals);
+
+    while (i.peek() !== undefined) {
+      let songStart = i.position;
+      if (i.next() === -577) {
+        let song = i.match(Song.parseSongGroup);
+        if (!song) continue;
+        if (!legacy) {
+          song = song.unitConvert(CONVERSION);
+        }
+        return [song, songStart, i.position-1, signals.slice(songStart-1, i.position)];
+      }
+    }
+    return;
+  }
+
   public static senderSong(sender: number): Song {
     const senderStr = sender.toString().padStart(4, "0");
     const digits = [...senderStr].map(x => parseInt(x));
@@ -42,73 +145,6 @@ export class Song {
     }))
     return new Song(notes);
   }
-
-  public toSignals(): number[] {
-    const signals = [];
-    signals.push(-577);
-    signals.push(-14);
-    for (const note of this.notes) {
-      signals.push(-605003);
-      for (let number of [note.time / CONVERSION, note.length / CONVERSION, note.frequency * CONVERSION]) {
-        number *= 1000;
-        if (number < 0) {
-          signals.push(-1);
-          number *= -1;
-        }
-        signals.push(~~(number / 1000))
-        if (~~(number % 1000) !== 0) {
-          signals.push(-10);
-          for (let i = (~~(number % 1000)).toString().length; i < 3; i++) {
-            signals.push(0);
-          }
-          signals.push(~~(number % 1000));
-        };
-        signals.push(-3);
-      }
-    }
-    if (signals.length > 2) signals.pop();
-    signals.push(-15);
-    return signals;
-  }
-
-  public static fromSignals(signals: number[], legacy?: boolean): [Song, number, number] | undefined {
-    // Look for song
-    const i = new Peekable(signals);
-
-    while (i.peek() !== undefined) {
-      let songStart = i.position;
-      if (i.next() === -577) {
-        let notes = i.match(parseGroup(parseCollection(parseNote, -3, false)));
-        if (!notes) continue;
-        if (!legacy) {
-          notes = notes.map(n => ({
-            time: n.time * CONVERSION,
-            length: n.length * CONVERSION,
-            frequency: n.frequency * CONVERSION,
-          }));
-        }
-        return [new Song(notes), songStart, i.position-1];
-      }
-    }
-    return;
-  }
-}
-
-
-function parseNote(i: Peekable): Note | undefined {
-  if (!i.matchExact(-605003)) return;
-
-  const time = i.match(parseNumber) ?? 0;
-
-  if (!i.matchExact(-3)) return;
-
-  const length = i.match(parseNumber) ?? 0;
-
-  if (!i.matchExact(-3)) return;
-
-  const frequency = i.match(parseNumber) ?? 0;
-
-  return {time, length, frequency};
 }
 
 export function processSongs(messages: Message[]): Message[] {
@@ -116,9 +152,9 @@ export function processSongs(messages: Message[]): Message[] {
     .map(m => {
       const songResult = Song.fromSignals(m.signals, m.receivedAt < SONG_LEGACY_CHANGE_TIME);
       if (!songResult) return m;
-      const [song, start, end] = songResult;
+      const [song, start, end, songSignals] = songResult;
       const cutSong = [...m.signals.slice(0, start + 2), -25, ...m.signals.slice(end)];
 
-      return {...m, signals: cutSong, tags: [...m.tags, "song"], song}
+      return {...m, signals: cutSong, tags: [...m.tags, "song"], song, songSignals}
     });
 }

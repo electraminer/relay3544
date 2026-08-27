@@ -170,8 +170,8 @@ export function Message(props: {
     {props.message.song && <span className="message-button message-playsong"
           onClick={() =>
         navigator.clipboard.writeText(decompile(
-                props.message.song!.toSignals().join(" "),
-                props.dictionary,
+          props.message.songSignals!.join(" "),
+          props.dictionary,
         ))}
     ><span className="material-symbols-outlined">content_copy</span></span>}
     </div>

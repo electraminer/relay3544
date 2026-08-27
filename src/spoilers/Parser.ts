@@ -1,11 +1,13 @@
 
-export class Peekable {
+export class Peekable<V> {
   signals: number[];
   position: number;
+  scope: Map<number, V>;
 
-  constructor(signals: number[], position?: number) {
+  constructor(signals: number[], position?: number, scope?: Map<number, V>) {
     this.signals = signals;
     this.position = position ?? 0;
+    this.scope = scope ?? new Map();
   }
 
   peek(): number | undefined {
@@ -16,10 +18,24 @@ export class Peekable {
     return this.signals[this.position++];
   }
 
-  match<T>(filter: (i: Peekable) => T | undefined): T | undefined {
+  getVar(key: number): V | undefined {
+    return this.scope.get(key);
+  }
+  
+  setVar(key: number, value: V): boolean {
+    if (this.scope.has(key)) return false;
+    this.scope.set(key, value);
+    return true;
+  }
+
+  match<T>(filter: (i: Peekable<V>) => T | undefined): T | undefined {
     let prevPosition = this.position;
+    let prevScope = new Map(this.scope);
     const result = filter(this);
-    if (result === undefined) this.position = prevPosition;
+    if (result === undefined) {
+        this.position = prevPosition;
+        this.scope = prevScope;
+    }
     return result;
   }
 
@@ -38,7 +54,7 @@ function notNan(number: number): number | undefined {
   return Number.isNaN(number) ? undefined : number;
 }
 
-export function parseDigitString(i: Peekable): string {
+export function parseDigitString<V>(i: Peekable<V>): string {
   let number = "";
   let digit;
   while ((digit = i.matchSignal(s => s >= 0)) !== undefined) {
@@ -47,7 +63,7 @@ export function parseDigitString(i: Peekable): string {
   return number;
 }
 
-export function parseNumber(i: Peekable): number | undefined {
+export function parseNumber<V>(i: Peekable<V>): number | undefined {
   let number = "";
   if (i.matchExact(-1)) number += "-";
   number += parseDigitString(i);
@@ -56,8 +72,8 @@ export function parseNumber(i: Peekable): number | undefined {
   return notNan(parseFloat(number));
 }
 
-export function parseCollection<T>(elem: (i: Peekable) => T | undefined, sep: number, sepRequred: boolean):
-    ((i: Peekable) => T[] | undefined) {
+export function parseCollection<T, V>(elem: (i: Peekable<V>) => T | undefined, sep: number, sepRequred: boolean):
+    ((i: Peekable<V>) => T[] | undefined) {
   return i => {
     const collection = [];
     while (true) {
@@ -70,7 +86,7 @@ export function parseCollection<T>(elem: (i: Peekable) => T | undefined, sep: nu
   }
 }
 
-export function parseGroup<T>(contents: (i: Peekable) => T | undefined): ((i: Peekable) => T | undefined) {
+export function parseGroup<T, V>(contents: (i: Peekable<V>) => T | undefined): ((i: Peekable<V>) => T | undefined) {
   return i => {
     if (!i.matchExact(-14)) return;
 
