@@ -1,5 +1,6 @@
 import { superdough } from "@strudel/webaudio";
 import type { Message } from "../Message";
+import { parseCollection, parseGroup, parseNumber, Peekable } from "./Parser";
 
 interface Note {
   time: number; // in seconds
@@ -77,7 +78,7 @@ export class Song {
     while (i.peek() !== undefined) {
       let songStart = i.position;
       if (i.next() === -577) {
-        let notes = i.match(parseCollection(parseNote));
+        let notes = i.match(parseGroup(parseCollection(parseNote, -3, false)));
         if (!notes) continue;
         if (!legacy) {
           notes = notes.map(n => ({
@@ -93,103 +94,21 @@ export class Song {
   }
 }
 
-interface Peekable {
-}
-
-class Peekable {
-  signals: number[];
-  position: number;
-
-  constructor(signals: number[], position?: number) {
-    this.signals = signals;
-    this.position = position ?? 0;
-  }
-
-  peek(): number | undefined {
-    return this.signals[this.position];
-  }
-
-  next(): number | undefined {
-    return this.signals[this.position++];
-  }
-
-  match<T>(filter: (i: Peekable) => T | undefined): T | undefined {
-    let prevPosition = this.position;
-    const result = filter(this);
-    if (result === undefined) this.position = prevPosition;
-    return result;
-  }
-
-  matchSignal(filter: (signal: number) => boolean): number | undefined {
-    if (this.peek() !== undefined && filter(this.peek()!)) {
-      return this.next();
-    }
-  }
-
-  matchExact(signal?: number): boolean {
-    return this.matchSignal(s => s === signal) !== undefined;
-  }
-}
-
-function notNan(number: number): number | undefined {
-  return Number.isNaN(number) ? undefined : number;
-}
-
-function parseDigitString(i: Peekable): string {
-  let number = "";
-  let digit;
-  while ((digit = i.matchSignal(s => s >= 0)) !== undefined) {
-    number += digit.toString();
-  }
-  return number;
-}
-
-function parseNumber(i: Peekable): number | undefined {
-  let number = "";
-  if (i.matchExact(-1)) number += "-";
-  number += parseDigitString(i);
-  if (i.matchExact(-10)) number += ".";
-  number += parseDigitString(i);
-  return notNan(parseFloat(number));
-}
 
 function parseNote(i: Peekable): Note | undefined {
   if (!i.matchExact(-605003)) return;
 
-  const time = i.match(parseNumber);
-  if (time === undefined) return;
+  const time = i.match(parseNumber) ?? 0;
 
   if (!i.matchExact(-3)) return;
 
-  const length = i.match(parseNumber);
-  if (length === undefined) return;
+  const length = i.match(parseNumber) ?? 0;
 
   if (!i.matchExact(-3)) return;
 
-  const frequency = i.match(parseNumber);
-  if (frequency === undefined) return;
+  const frequency = i.match(parseNumber) ?? 0;
 
   return {time, length, frequency};
-}
-
-function parseCollection<T>(elem: (i: Peekable) => T | undefined): ((i: Peekable) => T[] | undefined) {
-  return i => {
-    if (!i.matchExact(-14)) return;
-
-    const collection = [];
-    while (!i.matchExact(-15)) {
-      const note = i.match(elem);
-      if (!note) return;
-      collection.push(note);
-      
-      // Pre-trailing-comma check
-      if (i.matchExact(-15)) return collection;
-
-      if (!i.matchExact(-3)) return;
-    }
-
-    return collection;
-  }
 }
 
 export function processSongs(messages: Message[]): Message[] {
