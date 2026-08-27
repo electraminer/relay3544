@@ -135,7 +135,7 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
           const messageChannel = getMessageChannel(message.signals);
           const channelOpen = messageChannel === null || openChannelsRef.current.includes(messageChannel);
           
-          const recentMessages = messages.slice(-10);
+          const recentMessages = messagesRef.current.slice(-10);
           if (recentMessages.find(m =>
             m.id === message.id
             && m.sender === message.sender
