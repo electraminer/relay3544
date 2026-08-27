@@ -48,13 +48,13 @@ export class Song {
     })));
   }
 
-  private scale(scale: number) {
-    return new Song(this.notes.map(x => ({
-      time: x.time * scale,
-      length: x.length * scale,
-      frequency: x.frequency,
-    })));
-  }
+  // private scale(scale: number) {
+  //   return new Song(this.notes.map(x => ({
+  //     time: x.time * scale,
+  //     length: x.length * scale,
+  //     frequency: x.frequency,
+  //   })));
+  // }
 
   private append(song: Song) {
     return new Song([
@@ -129,7 +129,7 @@ export class Song {
         if (!legacy) {
           song = song.unitConvert(CONVERSION);
         }
-        return [song, songStart, i.position-1, signals.slice(songStart-1, i.position)];
+        return [song, songStart, i.position-1, signals.slice(songStart, i.position)];
       }
     }
     return;
