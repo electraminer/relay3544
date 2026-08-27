@@ -40,8 +40,11 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
   const [status, setStatus] = useState<SocketStatus>("connecting");
 
   const [online, setOnline] = useState<number[]>([]);
+
   const [messages, setMessages] = useState<Message[]>(loadMessages);
+  const messagesRef = useRef(messages);
   useEffect(() => {
+    messagesRef.current = messages;
     localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
   }, [messages]);
 
@@ -132,7 +135,7 @@ export function useRelaySocket(openChannels: number[], audio: AudioPlayer): Rela
           const messageChannel = getMessageChannel(message.signals);
           const channelOpen = messageChannel === null || openChannelsRef.current.includes(messageChannel);
           
-          const recentMessages = messages.slice(-20);
+          const recentMessages = messages.slice(-10);
           if (recentMessages.find(m =>
             m.id === message.id
             && m.sender === message.sender
