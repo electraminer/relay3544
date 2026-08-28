@@ -235,6 +235,52 @@ export const DEFAULT_DICTIONARY = new Map<number, DictEntry>([
   ],
 ]);
 
+function loadDictEntries() {
+  try {
+    return (JSON.parse(localStorage.getItem(DICT_KEY)!) ?? []).map(
+      (x: EditDictEntry) => fillIncompleteEntry(x),
+    );
+  } catch (e) {
+    console.log(e);
+    return [];
+  }
+}
+
+function loadSignalFmt() {
+  let fmt = DEFAULT_ENTRY;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SIGFMT_KEY)!) ?? [];
+    fmt = fillIncompleteEntry(parsed, fmt);
+  } catch (e) {}
+  return fillIncompleteEntry(["-Infinity", "Signal Format"], fmt);
+}
+
+function loadNumberFmt() {
+  let fmt = fillIncompleteEntry(["", "", "", ""]);
+  try {
+    const parsed = JSON.parse(localStorage.getItem(NUMFMT_KEY)!) ?? [];
+    fmt = fillIncompleteEntry(parsed, fmt);
+  } catch (e) {}
+  return fillIncompleteEntry(["Infinity", "Number Format"], fmt);
+}
+
+function toDictMap(dict: EditDict, sig: EditDictEntry, num: EditDictEntry) {
+    const dictMap = new Map<number, DictEntry>();
+    for (const def of dict) {
+      dictMap.set(parseInt(def[0]), toDictEntry(def));
+    }
+    dictMap.set(-Infinity, toDictEntry(sig));
+    dictMap.set(Infinity, toDictEntry(num));
+    return dictMap;
+}
+
+export function loadDictionary() {
+  const dict = loadDictEntries();
+  const sig = loadSignalFmt();
+  const num = loadNumberFmt();
+  return toDictMap(dict, sig, num);
+}
+
 export type DictionaryHandle = {
   focusSignal: (signal: number) => void;
 };
@@ -246,32 +292,9 @@ export function Dictionary(props: {
   const [detail, setDetail] = useState(false);
   const [focus, setFocus] = useState<number>(-Infinity);
 
-  const [dict, setDict] = useState<EditDict>(() => {
-    try {
-      return (JSON.parse(localStorage.getItem(DICT_KEY)!) ?? []).map(
-        (x: EditDictEntry) => fillIncompleteEntry(x),
-      );
-    } catch (e) {
-      console.log(e);
-      return [];
-    }
-  });
-  const [signalFmt, setSignalFmt] = useState<EditDictEntry>(() => {
-    let fmt = DEFAULT_ENTRY;
-    try {
-      const parsed = JSON.parse(localStorage.getItem(SIGFMT_KEY)!) ?? [];
-      fmt = fillIncompleteEntry(parsed, fmt);
-    } catch (e) {}
-    return fillIncompleteEntry(["-Infinity", "Signal Format"], fmt);
-  });
-  const [numberFmt, setNumberFmt] = useState<EditDictEntry>(() => {
-    let fmt = fillIncompleteEntry(["", "", "", ""]);
-    try {
-      const parsed = JSON.parse(localStorage.getItem(NUMFMT_KEY)!) ?? [];
-      fmt = fillIncompleteEntry(parsed, fmt);
-    } catch (e) {}
-    return fillIncompleteEntry(["Infinity", "Number Format"], fmt);
-  });
+  const [dict, setDict] = useState<EditDict>(loadDictEntries);
+  const [signalFmt, setSignalFmt] = useState<EditDictEntry>(loadSignalFmt);
+  const [numberFmt, setNumberFmt] = useState<EditDictEntry>(loadNumberFmt);
 
   const focusRow =
     focus >= 0 && focus < dict.length
@@ -286,13 +309,7 @@ export function Dictionary(props: {
     localStorage.setItem(SIGFMT_KEY, JSON.stringify(signalFmt));
     localStorage.setItem(NUMFMT_KEY, JSON.stringify(numberFmt));
 
-    const dictMap = new Map<number, DictEntry>();
-    for (const def of dict) {
-      dictMap.set(parseInt(def[0]), toDictEntry(def));
-    }
-    dictMap.set(-Infinity, toDictEntry(signalFmt));
-    dictMap.set(Infinity, toDictEntry(numberFmt));
-
+    const dictMap = toDictMap(dict, signalFmt, numberFmt);
     props.onChangeDict(dictMap);
   }, [dict, signalFmt, numberFmt]);
 

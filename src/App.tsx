@@ -18,6 +18,7 @@ import { useRelaySocket } from "./useRelaySocket";
 import {
   DEFAULT_DICTIONARY,
   Dictionary,
+  loadDictionary,
   type DictEntry,
   type DictionaryHandle,
 } from "./Dictionary";
@@ -159,7 +160,7 @@ function App() {
   });
   const [image, setImage] = useState<Image>(Image.empty());
   const [dictMap, setDict] =
-    useState<Map<number, DictEntry>>(DEFAULT_DICTIONARY);
+    useState<Map<number, DictEntry>>(loadDictionary);
   const dictionaryRef = useRef<DictionaryHandle>(null);
   const layoutRef = useRef<ILayoutApi>(null);
   const [dictOpen, setDictOpen] = useState(initialDictOpen);
