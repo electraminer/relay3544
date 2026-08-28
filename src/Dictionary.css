@@ -1,4 +1,3 @@
-
 .dict {
   height: 100%;
   display: flex;
@@ -96,7 +95,8 @@
   position: relative;
 }
 
-.dict-editor-format-toggle .material-symbols-outlined, .dict-editor-format-button .material-symbols-outlined {
+.dict-editor-format-toggle .material-symbols-outlined,
+.dict-editor-format-button .material-symbols-outlined {
   line-height: 0;
   position: relative;
   top: 20%;

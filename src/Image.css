@@ -1,4 +1,3 @@
-
 .image {
   height: 100%;
   display: flex;
@@ -17,9 +16,9 @@
 }
 
 .image-container {
-    width: 100%;
-    height: 100%;
-    position: relative;
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
 .image-editor-controls {
@@ -39,7 +38,7 @@
   position: absolute;
   top: var(--margin-small);
   right: var(--margin-small);
-  
+
   aspect-ratio: 1/1;
   padding: 0;
   display: flex;

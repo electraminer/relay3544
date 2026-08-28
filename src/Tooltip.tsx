@@ -1,10 +1,10 @@
-import { useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 export function TooltipWrap(props: {
-  children: ReactNode,
-  tooltip: ReactNode,
-  onClick?: () => void,
+  children: ReactNode;
+  tooltip: ReactNode;
+  onClick?: () => void;
 }) {
   const { children, tooltip, onClick } = props;
   const wrapRef = useRef<HTMLSpanElement>(null);
@@ -16,22 +16,23 @@ export function TooltipWrap(props: {
       ref={wrapRef}
       onMouseEnter={() => setRect(wrapRef.current!.getBoundingClientRect())}
       onMouseLeave={() => setRect(null)}
-      onClick={e => {
+      onClick={(e) => {
         onClick?.();
         e.preventDefault();
         setRect(null);
       }}
     >
       {children}
-      {rect && createPortal(
-        <div
-          className="tooltip"
-          style={{ top: rect.bottom, right: window.innerWidth - rect.right }}
-        >
-          {tooltip}
-        </div>,
-        document.body,
-      )}
+      {rect &&
+        createPortal(
+          <div
+            className="tooltip"
+            style={{ top: rect.bottom, right: window.innerWidth - rect.right }}
+          >
+            {tooltip}
+          </div>,
+          document.body,
+        )}
     </span>
   );
 }

@@ -6,7 +6,7 @@
 
 :root {
   color-scheme: dark;
-  --font-main: 'JetBrainsNerd', monospace;
+  --font-main: "JetBrainsNerd", monospace;
   --font-size-large: 20px;
   --font-size-small: 16px;
   --margin-small: 6px;
