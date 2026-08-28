@@ -111,7 +111,7 @@ export function EditorPane(props: {
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      if (status !== "readwrite") {
+      if (status === "readwrite") {
         e.preventDefault();
         handleSend();
       }
@@ -121,14 +121,20 @@ export function EditorPane(props: {
   return (
     <div className="editor">
       <div className="toolbar">
-        <button onClick={handleImport}
-            disabled={status !== "readwrite"}>→Import</button>
-        <button disabled={compileErrors.length > 0 || status !== "readwrite"} onClick={handleExport}>
+        <button onClick={handleImport} disabled={status !== "readwrite"}>
+          →Import
+        </button>
+        <button
+          disabled={compileErrors.length > 0 || status !== "readwrite"}
+          onClick={handleExport}
+        >
           Export→
         </button>
         <button
           disabled={
-            compileErrors.length > 0 || compiled.length === 0 || status !== "readwrite"
+            compileErrors.length > 0 ||
+            compiled.length === 0 ||
+            status !== "readwrite"
           }
           onClick={handleSend}
         >
@@ -148,9 +154,11 @@ export function EditorPane(props: {
             autoComplete="off"
             className={compileErrors.length > 0 ? "invalid" : ""}
             value={
-              status === "readwrite" ? value :
-              status === "readonly" ? "Call sign already in use" :
-              "Connecting"
+              status === "readwrite"
+                ? value
+                : status === "readonly"
+                  ? "Call sign already in use"
+                  : "Connecting"
             }
             onChange={(e) => handleChange(e.target.value)}
             onScroll={syncScroll}

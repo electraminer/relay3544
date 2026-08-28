@@ -265,13 +265,13 @@ function loadNumberFmt() {
 }
 
 function toDictMap(dict: EditDict, sig: EditDictEntry, num: EditDictEntry) {
-    const dictMap = new Map<number, DictEntry>();
-    for (const def of dict) {
-      dictMap.set(parseInt(def[0]), toDictEntry(def));
-    }
-    dictMap.set(-Infinity, toDictEntry(sig));
-    dictMap.set(Infinity, toDictEntry(num));
-    return dictMap;
+  const dictMap = new Map<number, DictEntry>();
+  for (const def of dict) {
+    dictMap.set(parseInt(def[0]), toDictEntry(def));
+  }
+  dictMap.set(-Infinity, toDictEntry(sig));
+  dictMap.set(Infinity, toDictEntry(num));
+  return dictMap;
 }
 
 export function loadDictionary() {
@@ -528,8 +528,10 @@ export function Dictionary(props: {
           const focusClass = focus === row ? "table-focus" : "";
           if (col !== 1) return focusClass;
           const nameString = dict[row][1];
-          let statusClass = nameString.length === 0 || dictDupes.get(nameString) > 1
-            ? "dict-editor-duplicate" : "";
+          let statusClass =
+            nameString.length === 0 || dictDupes.get(nameString) > 1
+              ? "dict-editor-duplicate"
+              : "";
           return `${focusClass} ${statusClass}`;
         }}
         cellStyle={(row, col) => {
