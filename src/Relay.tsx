@@ -32,9 +32,9 @@ function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
 export function EditorPane(props: {
   dictionary: Map<number, DictEntry>;
   onSend: (msg: number[]) => void;
-  canSend: boolean;
+  status: string;
 }) {
-  const { dictionary, onSend, canSend } = props;
+  const { dictionary, onSend, status } = props;
 
   const [value, setValue] = useState("");
   const [compiled, setCompiled] = useState("");
@@ -111,7 +111,7 @@ export function EditorPane(props: {
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      if (canSend) {
+      if (status !== "readwrite") {
         e.preventDefault();
         handleSend();
       }
@@ -121,13 +121,14 @@ export function EditorPane(props: {
   return (
     <div className="editor">
       <div className="toolbar">
-        <button onClick={handleImport}>→Import</button>
-        <button disabled={compileErrors.length > 0} onClick={handleExport}>
+        <button onClick={handleImport}
+            disabled={status !== "readwrite"}>→Import</button>
+        <button disabled={compileErrors.length > 0 || status !== "readwrite"} onClick={handleExport}>
           Export→
         </button>
         <button
           disabled={
-            compileErrors.length > 0 || compiled.length === 0 || !canSend
+            compileErrors.length > 0 || compiled.length === 0 || status !== "readwrite"
           }
           onClick={handleSend}
         >
@@ -146,10 +147,15 @@ export function EditorPane(props: {
             spellCheck={false}
             autoComplete="off"
             className={compileErrors.length > 0 ? "invalid" : ""}
-            value={value}
+            value={
+              status === "readwrite" ? value :
+              status === "readonly" ? "Call sign already in use" :
+              "Connecting"
+            }
             onChange={(e) => handleChange(e.target.value)}
             onScroll={syncScroll}
             onKeyDown={handleKeyDown}
+            disabled={status !== "readwrite"}
           />
         </div>
         {importErrors.length > 0 && (
@@ -222,7 +228,7 @@ export function RelayPane(props: {
       <EditorPane
         dictionary={props.dictionary}
         onSend={(msg) => props.onSend(msg, props.channel)}
-        canSend={props.relay.status === "readwrite"}
+        status={props.relay.status}
       />
     </div>
   );

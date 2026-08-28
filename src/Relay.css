@@ -66,6 +66,12 @@ textarea {
   overflow: auto;
 }
 
+textarea:disabled {
+  background-color: var(--color-back-highlight);
+  color: var(--color-text);
+  border-color: #ff5555;
+}
+
 .backdrop {
   background: var(--color-background);
   color: var(--color-text);
