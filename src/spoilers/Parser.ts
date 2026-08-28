@@ -1,4 +1,3 @@
-
 export class Peekable<V> {
   signals: number[];
   position: number;
@@ -21,7 +20,7 @@ export class Peekable<V> {
   getVar(key: number): V | undefined {
     return this.scope.get(key);
   }
-  
+
   setVar(key: number, value: V): boolean {
     if (this.scope.has(key)) return false;
     this.scope.set(key, value);
@@ -33,8 +32,8 @@ export class Peekable<V> {
     let prevScope = new Map(this.scope);
     const result = filter(this);
     if (result === undefined) {
-        this.position = prevPosition;
-        this.scope = prevScope;
+      this.position = prevPosition;
+      this.scope = prevScope;
     }
     return result;
   }
@@ -46,7 +45,7 @@ export class Peekable<V> {
   }
 
   matchExact(signal?: number): boolean {
-    return this.matchSignal(s => s === signal) !== undefined;
+    return this.matchSignal((s) => s === signal) !== undefined;
   }
 }
 
@@ -57,7 +56,7 @@ function notNan(number: number): number | undefined {
 export function parseDigitString<V>(i: Peekable<V>): string {
   let number = "";
   let digit;
-  while ((digit = i.matchSignal(s => s >= 0)) !== undefined) {
+  while ((digit = i.matchSignal((s) => s >= 0)) !== undefined) {
     number += digit.toString();
   }
   return number;
@@ -72,22 +71,27 @@ export function parseNumber<V>(i: Peekable<V>): number | undefined {
   return notNan(parseFloat(number));
 }
 
-export function parseCollection<T, V>(elem: (i: Peekable<V>) => T | undefined, sep: number, sepRequred: boolean):
-    ((i: Peekable<V>) => T[] | undefined) {
-  return i => {
+export function parseCollection<T, V>(
+  elem: (i: Peekable<V>) => T | undefined,
+  sep: number,
+  sepRequred: boolean,
+): (i: Peekable<V>) => T[] | undefined {
+  return (i) => {
     const collection = [];
     while (true) {
       const item = i.match(elem);
       if (!item) return collection;
       collection.push(item);
-      
+
       if (!i.matchExact(sep) && sepRequred) return collection;
     }
-  }
+  };
 }
 
-export function parseGroup<T, V>(contents: (i: Peekable<V>) => T | undefined): ((i: Peekable<V>) => T | undefined) {
-  return i => {
+export function parseGroup<T, V>(
+  contents: (i: Peekable<V>) => T | undefined,
+): (i: Peekable<V>) => T | undefined {
+  return (i) => {
     if (!i.matchExact(-14)) return;
 
     const group = i.match(contents);
@@ -96,5 +100,5 @@ export function parseGroup<T, V>(contents: (i: Peekable<V>) => T | undefined): (
     if (!i.matchExact(-15)) return;
 
     return group;
-  }
+  };
 }

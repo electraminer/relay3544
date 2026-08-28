@@ -1,19 +1,21 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   compile,
   decompile,
   CompileError,
   MultiCompileError,
-} from './converter';
-import './Relay.css';
-import { Chat } from './Chat';
-import type { Image } from './spoilers/Image';
-import type { DictEntry } from './Dictionary';
-import type { Relay, useRelaySocket } from './useRelaySocket';
-import type { AudioPlayer } from './AudioPlayer';
+} from "./converter";
+import "./Relay.css";
+import { Chat } from "./Chat";
+import type { Image } from "./spoilers/Image";
+import type { DictEntry } from "./Dictionary";
+import type { Relay, useRelaySocket } from "./useRelaySocket";
+import type { AudioPlayer } from "./AudioPlayer";
 
 function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
-  const ranges = errors.filter((e) => e.end > e.start).sort((a, b) => a.start - b.start);
+  const ranges = errors
+    .filter((e) => e.end > e.start)
+    .sort((a, b) => a.start - b.start);
   if (ranges.length === 0) return value;
 
   const parts: ReactNode[] = [];
@@ -28,14 +30,14 @@ function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
 }
 
 export function EditorPane(props: {
-  dictionary: Map<number, DictEntry>,
-  onSend: (msg: number[]) => void,
-  canSend: boolean,
+  dictionary: Map<number, DictEntry>;
+  onSend: (msg: number[]) => void;
+  status: string;
 }) {
-  const {dictionary, onSend, canSend} = props;
+  const { dictionary, onSend, status } = props;
 
-  const [value, setValue] = useState('');
-  const [compiled, setCompiled] = useState('');
+  const [value, setValue] = useState("");
+  const [compiled, setCompiled] = useState("");
   const [importErrors, setImportErrors] = useState<CompileError[]>([]);
   const [importSuccess, setImportSuccess] = useState<CompileError[]>([]);
   const [compileErrors, setCompileErrors] = useState<CompileError[]>([]);
@@ -57,20 +59,22 @@ export function EditorPane(props: {
     try {
       setCompiled(compile(next, dictionary));
     } catch (e) {
-      setCompileErrors(e instanceof MultiCompileError ? e.errors : [e as CompileError]);
+      setCompileErrors(
+        e instanceof MultiCompileError ? e.errors : [e as CompileError],
+      );
     }
   }
 
   useEffect(() => {
     handleChange(value);
-  }, [dictionary])
+  }, [dictionary]);
 
   async function handleImport() {
     let clipboardText: string;
     try {
       clipboardText = await navigator.clipboard.readText();
     } catch {
-      setImportErrors([new CompileError('Could not read clipboard', 0, 0)]);
+      setImportErrors([new CompileError("Could not read clipboard", 0, 0)]);
       setImportSuccess([]);
       return;
     }
@@ -80,9 +84,11 @@ export function EditorPane(props: {
       const next = decompile(compiled, dictionary);
       handleChange(next);
       setImportErrors([]);
-      setImportSuccess([new CompileError('Imported!', 0, 0)]);
+      setImportSuccess([new CompileError("Imported!", 0, 0)]);
     } catch (e) {
-      setImportErrors(e instanceof MultiCompileError ? e.errors : [e as CompileError]);
+      setImportErrors(
+        e instanceof MultiCompileError ? e.errors : [e as CompileError],
+      );
     }
   }
 
@@ -90,22 +96,22 @@ export function EditorPane(props: {
     try {
       await navigator.clipboard.writeText(compiled);
       setImportErrors([]);
-      setImportSuccess([new CompileError('Exported!', 0, 0)]);
+      setImportSuccess([new CompileError("Exported!", 0, 0)]);
     } catch {
-      setImportErrors([new CompileError('Could not write to clipboard', 0, 0)]);
+      setImportErrors([new CompileError("Could not write to clipboard", 0, 0)]);
       setImportSuccess([]);
     }
   }
 
   function handleSend() {
     if (compileErrors.length > 0 || compiled.length === 0) return;
-    onSend(compiled.split(" ").map(x => parseInt(x)));
+    onSend(compiled.split(" ").map((x) => parseInt(x)));
     handleChange("");
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      if (canSend) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      if (status !== "readwrite") {
         e.preventDefault();
         handleSend();
       }
@@ -115,28 +121,41 @@ export function EditorPane(props: {
   return (
     <div className="editor">
       <div className="toolbar">
-        <button onClick={handleImport}>→Import</button>
-        <button disabled={compileErrors.length > 0} onClick={handleExport}>
+        <button onClick={handleImport}
+            disabled={status !== "readwrite"}>→Import</button>
+        <button disabled={compileErrors.length > 0 || status !== "readwrite"} onClick={handleExport}>
           Export→
         </button>
-        <button disabled={compileErrors.length > 0 || compiled.length === 0 || !canSend} onClick={handleSend}>
+        <button
+          disabled={
+            compileErrors.length > 0 || compiled.length === 0 || status !== "readwrite"
+          }
+          onClick={handleSend}
+        >
           Send↑
         </button>
       </div>
       <div className="field">
         <div className="textbox">
           <div className="backdrop" ref={backdropRef}>
-            <div className="highlights">{renderHighlighted(value, compileErrors)}</div>
+            <div className="highlights">
+              {renderHighlighted(value, compileErrors)}
+            </div>
           </div>
           <textarea
             ref={textareaRef}
             spellCheck={false}
             autoComplete="off"
-            className={compileErrors.length > 0 ? 'invalid' : ''}
-            value={value}
+            className={compileErrors.length > 0 ? "invalid" : ""}
+            value={
+              status === "readwrite" ? value :
+              status === "readonly" ? "Call sign already in use" :
+              "Connecting"
+            }
             onChange={(e) => handleChange(e.target.value)}
             onScroll={syncScroll}
             onKeyDown={handleKeyDown}
+            disabled={status !== "readwrite"}
           />
         </div>
         {importErrors.length > 0 && (
@@ -159,12 +178,12 @@ export function EditorPane(props: {
 }
 
 export function ChatViewer(props: {
-  dictionary: Map<number, DictEntry>,
-  onImage: (image: Image) => void,
-  onDefine: (signal: number) => void,
-  relay: ReturnType<typeof useRelaySocket>,
-  channel: number | null,
-  audio: AudioPlayer,
+  dictionary: Map<number, DictEntry>;
+  onImage: (image: Image) => void;
+  onDefine: (signal: number) => void;
+  relay: ReturnType<typeof useRelaySocket>;
+  channel: number | null;
+  audio: AudioPlayer;
 }) {
   const { dictionary, onImage, onDefine, relay } = props;
   const { code, online, messages } = relay;
@@ -181,20 +200,20 @@ export function ChatViewer(props: {
           onSelectSignal={onDefine}
           onViewImage={onImage}
           audio={props.audio}
-          />
+        />
       </div>
     </div>
   );
 }
 
 export function RelayPane(props: {
-  dictionary: Map<number, DictEntry>,
-  onImage: (image: Image) => void,
-  onDefine: (signal: number) => void,
-  onSend: (message: number[], channel: number | null) => void,
-  relay: Relay,
-  channel: number | null,
-  audio: AudioPlayer,
+  dictionary: Map<number, DictEntry>;
+  onImage: (image: Image) => void;
+  onDefine: (signal: number) => void;
+  onSend: (message: number[], channel: number | null) => void;
+  relay: Relay;
+  channel: number | null;
+  audio: AudioPlayer;
 }) {
   return (
     <div className="relay">
@@ -205,12 +224,12 @@ export function RelayPane(props: {
         relay={props.relay}
         channel={props.channel}
         audio={props.audio}
-        />
+      />
       <EditorPane
         dictionary={props.dictionary}
-        onSend={msg => props.onSend(msg, props.channel)}
-        canSend={props.relay.status === "readwrite"}
-        />
+        onSend={(msg) => props.onSend(msg, props.channel)}
+        status={props.relay.status}
+      />
     </div>
   );
 }

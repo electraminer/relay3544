@@ -19,9 +19,10 @@ export interface AudioPlayer {
 }
 
 export function useAudioPlayer() {
-
   const [playlistEnd, setPlaylistEnd] = React.useState(-1);
-  const [currentTimeout, setCurrentTimeout] = React.useState<number | null>(null);
+  const [currentTimeout, setCurrentTimeout] = React.useState<number | null>(
+    null,
+  );
   const [currentSongId, setCurrentSongId] = React.useState<string | null>(null);
 
   useEffect(() => {
@@ -51,12 +52,15 @@ export function useAudioPlayer() {
     setPlaylistEnd(end);
     setCurrentSongId(songId ?? null);
 
-    setCurrentTimeout(timeout => {
+    setCurrentTimeout((timeout) => {
       if (timeout) window.clearTimeout(timeout);
-      const newTimeout = window.setTimeout(() => {
-        setCurrentTimeout(null);
-        setCurrentSongId(null);
-      }, Math.ceil((end - now)*1000));
+      const newTimeout = window.setTimeout(
+        () => {
+          setCurrentTimeout(null);
+          setCurrentSongId(null);
+        },
+        Math.ceil((end - now) * 1000),
+      );
       return newTimeout;
     });
   }
@@ -72,5 +76,5 @@ export function useAudioPlayer() {
     stop,
     forcePlay,
     currentSongId,
-  }
+  };
 }

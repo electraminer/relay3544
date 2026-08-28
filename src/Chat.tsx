@@ -14,18 +14,18 @@ const LOAD_STEP = 64;
 const SCROLL_EDGE_THRESHOLD = 40;
 
 export function Chat(props: {
-  messages: Message[],
-  dictionary: Map<number, DictEntry>,
-  self: number,
-  channel: number | null,
-  online: Set<number>,
-  onSelectSignal: (signal: number) => void,
-  onViewImage: (image: Image) => void,
-  audio: AudioPlayer,
+  messages: Message[];
+  dictionary: Map<number, DictEntry>;
+  self: number;
+  channel: number | null;
+  online: Set<number>;
+  onSelectSignal: (signal: number) => void;
+  onViewImage: (image: Image) => void;
+  audio: AudioPlayer;
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_MESSAGE_COUNT);
   const containerRef = useRef<HTMLDivElement>(null);
-  const restoreScrollRef = useRef<{ height: number, top: number } | null>(null);
+  const restoreScrollRef = useRef<{ height: number; top: number } | null>(null);
   const pendingBottomRef = useRef(false);
 
   const filtered = filterChannels(props.messages, props.channel);
@@ -62,7 +62,7 @@ export function Chat(props: {
   // from whatever the user scrolled up to read.
   useLayoutEffect(() => {
     if (isScrolling) {
-      setVisibleCount(visibleCount + 1)
+      setVisibleCount(visibleCount + 1);
       return;
     }
     const el = containerRef.current;
@@ -73,13 +73,17 @@ export function Chat(props: {
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
-    setIsScrolling(el.scrollHeight - (el.scrollTop + el.clientHeight) >= SCROLL_EDGE_THRESHOLD);
+    setIsScrolling(
+      el.scrollHeight - (el.scrollTop + el.clientHeight) >=
+        SCROLL_EDGE_THRESHOLD,
+    );
     if (el.scrollTop <= SCROLL_EDGE_THRESHOLD && visibleCount < total) {
       restoreScrollRef.current = { height: el.scrollHeight, top: el.scrollTop };
-      setVisibleCount(count => Math.min(count + LOAD_STEP, total));
+      setVisibleCount((count) => Math.min(count + LOAD_STEP, total));
     } else if (
-      el.scrollHeight - el.scrollTop - el.clientHeight <= SCROLL_EDGE_THRESHOLD
-      && visibleCount > INITIAL_MESSAGE_COUNT
+      el.scrollHeight - el.scrollTop - el.clientHeight <=
+        SCROLL_EDGE_THRESHOLD &&
+      visibleCount > INITIAL_MESSAGE_COUNT
     ) {
       setVisibleCount(INITIAL_MESSAGE_COUNT);
     }
@@ -90,23 +94,24 @@ export function Chat(props: {
     setVisibleCount(INITIAL_MESSAGE_COUNT);
   }
 
-  return <div className="chat-wrap">
-    <div
-      className="chat"
-      ref={containerRef}
-      onScroll={handleScroll}
-    >
-      {withSongs.map((message,i) => <Message key={i}
-        message={
-          {...message, signals: displayedInsideChannel(message.signals, props.channel)}
-        }
+  return (
+    <div className="chat-wrap">
+      <div className="chat" ref={containerRef} onScroll={handleScroll}>
+        {withSongs.map((message, i) => (
+          <Message
+            key={i}
+            message={{
+              ...message,
+              signals: displayedInsideChannel(message.signals, props.channel),
+            }}
             dictionary={props.dictionary}
             self={props.self}
             online={props.online}
             onSelectSignal={props.onSelectSignal}
             onViewImage={props.onViewImage}
             audio={props.audio}
-      />)}
+          />
+        ))}
       </div>
       {isScrolling && (
         <button className="scroll-to-bottom" onClick={handleScrollToBottom}>
@@ -114,30 +119,42 @@ export function Chat(props: {
         </button>
       )}
     </div>
+  );
 }
 
 export function Message(props: {
-  message: Message,
-  dictionary: Map<number, DictEntry>,
-  online: Set<number>,
-  self: number,
-  onSelectSignal: (signal: number) => void,
-  onViewImage: (image: Image) => void,
-  audio: AudioPlayer,
+  message: Message;
+  dictionary: Map<number, DictEntry>;
+  online: Set<number>;
+  self: number;
+  onSelectSignal: (signal: number) => void;
+  onViewImage: (image: Image) => void;
+  audio: AudioPlayer;
 }): React.ReactNode {
-  const messageId = `${props.message.receivedAt} ${props.message.id}`
-  return <div className={`message
-      ${props.message.tags.map(t => `message--${t}`).join(" ")}
+  const messageId = `${props.message.receivedAt} ${props.message.id}`;
+  return (
+    <div
+      className={`message
+      ${props.message.tags.map((t) => `message--${t}`).join(" ")}
       ${props.message.sender === props.self && "message--self"}
-  `}>
+  `}
+    >
       <TooltipWrap
-      tooltip={new Date(props.message.receivedAt)
-        .toLocaleString()}>
-      <span className="message-time">{props.message.id.toString().padStart(3, "0")}</span>
+        tooltip={new Date(props.message.receivedAt).toLocaleString()}
+      >
+        <span className="message-time">
+          {props.message.id.toString().padStart(3, "0")}
+        </span>
       </TooltipWrap>
-    <TooltipWrap onClick={() => props.onSelectSignal(props.message.sender)}
-      tooltip={props.message.sender}>
-      <Sender audio={props.audio} sender={props.message.sender} dictionary={props.dictionary}/>
+      <TooltipWrap
+        onClick={() => props.onSelectSignal(props.message.sender)}
+        tooltip={props.message.sender}
+      >
+        <Sender
+          audio={props.audio}
+          sender={props.message.sender}
+          dictionary={props.dictionary}
+        />
       </TooltipWrap>
       <Text
         audio={props.audio}
@@ -146,17 +163,32 @@ export function Message(props: {
         online={props.online}
         onSelectSignal={props.onSelectSignal}
       />
-    {props.message.image && <span className="message-button message-viewimage"
+      {props.message.image && (
+        <span
+          className="message-button message-viewimage"
           onClick={() => props.onViewImage(props.message.image!)}
-    ><span className="material-symbols-outlined">visibility</span></span>}
-    {props.message.image && <span className="message-button message-viewimage"
+        >
+          <span className="material-symbols-outlined">visibility</span>
+        </span>
+      )}
+      {props.message.image && (
+        <span
+          className="message-button message-viewimage"
           onClick={() =>
-        navigator.clipboard.writeText(decompile(
+            navigator.clipboard.writeText(
+              decompile(
                 props.message.image!.toSignals().join(" "),
                 props.dictionary,
-        ))}
-    ><span className="material-symbols-outlined">content_copy</span></span>}
-    {props.message.song && <span className="message-button message-playsong"
+              ),
+            )
+          }
+        >
+          <span className="material-symbols-outlined">content_copy</span>
+        </span>
+      )}
+      {props.message.song && (
+        <span
+          className="message-button message-playsong"
           onClick={() => {
             if (props.audio.currentSongId === messageId) {
               props.audio.stop();
@@ -164,70 +196,103 @@ export function Message(props: {
               props.audio.forcePlay(props.message.song!, messageId);
             }
           }}
-    ><span className="material-symbols-outlined">
-      {props.audio.currentSongId === messageId ? `music_note_2` : `play_arrow`}
-    </span></span>}
-    {props.message.song && <span className="message-button message-playsong"
+        >
+          <span className="material-symbols-outlined">
+            {props.audio.currentSongId === messageId
+              ? `music_note_2`
+              : `play_arrow`}
+          </span>
+        </span>
+      )}
+      {props.message.song && (
+        <span
+          className="message-button message-playsong"
           onClick={() =>
-        navigator.clipboard.writeText(decompile(
-          props.message.songSignals!.join(" "),
-          props.dictionary,
-        ))}
-    ><span className="material-symbols-outlined">content_copy</span></span>}
+            navigator.clipboard.writeText(
+              decompile(props.message.songSignals!.join(" "), props.dictionary),
+            )
+          }
+        >
+          <span className="material-symbols-outlined">content_copy</span>
+        </span>
+      )}
     </div>
+  );
 }
 
 export function Sender(props: {
-  sender: number,
-  dictionary: Map<number, DictEntry>,
-  audio: AudioPlayer,
+  sender: number;
+  dictionary: Map<number, DictEntry>;
+  audio: AudioPlayer;
 }): React.ReactNode {
   const senderCode = props.sender.toString().padStart(4, "0");
-  return <span className="sender"
+  return (
+    <span
+      className="sender"
       onClick={() => props.audio.forcePlay(Song.senderSong(props.sender))}
       style={(() => {
-      const code = [...senderCode].map(x => parseInt(x));
+        const code = [...senderCode].map((x) => parseInt(x));
         return {
-        backgroundColor: `rgb(${code[1]*2*(7-code[0])}, ${code[2]*2*(7-code[0])}, ${code[3]*2*(7-code[0])}`,
-        color: `rgb(${code[1]*24+64}, ${code[2]*16+64}, ${code[3]*24+64})`,
+          backgroundColor: `rgb(${code[1] * 2 * (7 - code[0])}, ${code[2] * 2 * (7 - code[0])}, ${code[3] * 2 * (7 - code[0])}`,
+          color: `rgb(${code[1] * 24 + 64}, ${code[2] * 16 + 64}, ${code[3] * 24 + 64})`,
         };
       })()}
-  >{props.dictionary.get(props.sender)?.def ?? senderCode}</span>
+    >
+      {props.dictionary.get(props.sender)?.def ?? senderCode}
+    </span>
+  );
 }
 
 export function Text(props: {
-  signals: number[],
-  dictionary: Map<number, DictEntry>,
-  online: Set<number>,
-  audio: AudioPlayer,
-  onSelectSignal: (signal: number) => void,
+  signals: number[];
+  dictionary: Map<number, DictEntry>;
+  online: Set<number>;
+  audio: AudioPlayer;
+  onSelectSignal: (signal: number) => void;
 }): React.ReactNode {
   function textSignalStyle(signal: number): object {
     if (!props.dictionary.has(signal)) {
-      signal = (signal < 0) ? -Infinity : Infinity;
+      signal = signal < 0 ? -Infinity : Infinity;
     }
     return entryStyle(props.dictionary.get(signal)!);
   }
-  return <span className="text">
-    {props.signals.map((signal, i) => <Fragment key={i}>
-      <TooltipWrap onClick={() => {
+  return (
+    <span className="text">
+      {props.signals.map((signal, i) => (
+        <Fragment key={i}>
+          <TooltipWrap
+            onClick={() => {
               const isHuman = signal >= 10 && props.online.has(signal);
-        if (!props.dictionary.has(signal) && !isHuman && signal >= 0) return;
+              if (!props.dictionary.has(signal) && !isHuman && signal >= 0)
+                return;
               props.onSelectSignal(signal);
-      }} tooltip={signal}>
-        {props.online.has(signal) && signal >= 10 ?
-          <Sender audio={props.audio} sender={signal} dictionary={props.dictionary}/>
-        :
-          <span className="text-signal" style={textSignalStyle(signal)}>{props.dictionary.get(signal)?.def ?? signal}</span>
-        }
+            }}
+            tooltip={signal}
+          >
+            {props.online.has(signal) && signal >= 10 ? (
+              <Sender
+                audio={props.audio}
+                sender={signal}
+                dictionary={props.dictionary}
+              />
+            ) : (
+              <span className="text-signal" style={textSignalStyle(signal)}>
+                {props.dictionary.get(signal)?.def ?? signal}
+              </span>
+            )}
           </TooltipWrap>
-      {i < props.signals.length && <span>
-        {separator(signal, props.signals[i+1], props.dictionary)}
-      </span>}
-      {i > 0 && <span>
-        {doubleSeparator(props.signals[i-1], signal, props.dictionary)}
-      </span>}
+          {i < props.signals.length && (
+            <span>
+              {separator(signal, props.signals[i + 1], props.dictionary)}
+            </span>
+          )}
+          {i > 0 && (
+            <span>
+              {doubleSeparator(props.signals[i - 1], signal, props.dictionary)}
+            </span>
+          )}
         </Fragment>
-  )}
-  </span>;
+      ))}
+    </span>
+  );
 }

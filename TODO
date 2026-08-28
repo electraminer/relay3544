@@ -5,7 +5,6 @@
 ☐ Dictionary signal count
 ☐ Tooltips
 ☐ Font size setting?
-☐ Warn on duplicate definition
 ☐ Display word boundaries
 ☐ Indentation formatting
 ☐ Fix copying onto all new lines
@@ -20,5 +19,3 @@
 ☐ Fix clipped signal sound playing
 ☐ Improve music somehow
 ☐ Display color formatting in message editor
-☐ Display when call sign is conflicting (readonly)
-☐ Fix dict not loading before open
