@@ -532,6 +532,9 @@ export function Dictionary(props: {
             nameString.length === 0 || dictDupes.get(nameString) > 1
               ? "dict-editor-duplicate"
               : "";
+          if (!Number.isNaN(parseInt(dict[row][0]))) {
+            statusClass += ` dict-editor-def-${dict[row][0]}`;
+          }
           return `${focusClass} ${statusClass}`;
         }}
         cellStyle={(row, col) => {
