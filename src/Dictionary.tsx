@@ -506,7 +506,7 @@ export function Dictionary(props: {
         }
         onAddRow={() => addRow()}
         onFocusCell={(row) => setFocus(row)}
-        onFocusDeleteRow={() => setFocus(-1)}
+        onFocusDeleteRow={() => setFocus(-Infinity)}
         cellClassName={(row, col) => {
           const focusClass = focus === row ? "table-focus" : "";
           if (col !== 1) return focusClass;
