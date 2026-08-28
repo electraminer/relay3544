@@ -296,6 +296,12 @@ export function Dictionary(props: {
     props.onChangeDict(dictMap);
   }, [dict, signalFmt, numberFmt]);
 
+  const dictDupes = new Map();
+  for (const def of dict) {
+    const count = dictDupes.get(def[1]) ?? 0;
+    dictDupes.set(def[1], count + 1);
+  }
+
   function changeDict(
     updater: (
       prev: EditDict,
@@ -504,11 +510,10 @@ export function Dictionary(props: {
         cellClassName={(row, col) => {
           const focusClass = focus === row ? "table-focus" : "";
           if (col !== 1) return focusClass;
-          let idClass = "";
-          try {
-            idClass = parseInt(dict[row][0]).toString();
-          } catch (e) {}
-          return `${focusClass} dict-editor-def-${idClass}`;
+          const nameString = dict[row][1];
+          let statusClass = nameString.length === 0 || dictDupes.get(nameString) > 1
+            ? "dict-editor-duplicate" : "";
+          return `${focusClass} ${statusClass}`;
         }}
         cellStyle={(row, col) => {
           if (col === 1) return entryStyle(toDictEntry(dict[row]));

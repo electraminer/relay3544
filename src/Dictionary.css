@@ -114,3 +114,8 @@
   position: relative;
   color: var(--color-text);
 }
+
+.dict-editor-duplicate {
+  border-color: red !important;
+  outline: red 1px solid;
+}
