@@ -1,11 +1,15 @@
 import { superdough } from "@strudel/webaudio";
 import type { Message } from "../Message";
+import { parseCollection, parseGroup, parseNumber, Peekable } from "./Parser";
 
 interface Note {
   time: number; // in seconds
   length: number; // in seconds
   frequency: number; // in hertz
 }
+
+const CONVERSION = 0.8069224 // Songs are now in Alien units
+const SONG_LEGACY_CHANGE_TIME = 1787676792000; // Songs posted before this timestamp still use the legacy Human units
 
 export class Song {
   private notes: Note[];
@@ -28,6 +32,109 @@ export class Song {
     return end;
   }
 
+  private unitConvert(conversion: number) {
+    return new Song(this.notes.map(x => ({
+      time: x.time * conversion,
+      length: x.length * conversion,
+      frequency: x.frequency / conversion,
+    })));
+  }
+
+  private shift(time: number) {
+    return new Song(this.notes.map(x => ({
+      time: x.time + time,
+      length: x.length,
+      frequency: x.frequency,
+    })));
+  }
+
+  // private scale(scale: number) {
+  //   return new Song(this.notes.map(x => ({
+  //     time: x.time * scale,
+  //     length: x.length * scale,
+  //     frequency: x.frequency,
+  //   })));
+  // }
+
+  private append(song: Song) {
+    return new Song([
+      ...this.notes,
+      ...song.shift(this.length()).notes,
+    ])
+  }
+
+  static parseNote(i: Peekable<Song>): Note | undefined {
+    if (!i.matchExact(-605003)) return;
+
+    const time = i.match(parseNumber) ?? 0;
+    if (!i.matchExact(-3)) return;
+    const length = i.match(parseNumber) ?? 0;
+    if (!i.matchExact(-3)) return;
+    const frequency = i.match(parseNumber) ?? 0;
+
+    return {time, length, frequency};
+  }
+
+  static parseSongItem(i: Peekable<Song>): Song | undefined {
+    const note = i.match(Song.parseNote);
+    if (note) return new Song([note]);
+    const varDecl = i.match(Song.parseSongVarDecl);
+    if (varDecl) return varDecl;
+    const varValue = i.match(Song.parseSongVar);
+    if (varValue) return varValue;
+
+    return i.match(Song.parseSongGroup);
+  }
+
+  static parseSongChord(i: Peekable<Song>): Song | undefined {
+    const group = i.match(parseCollection(Song.parseSongItem, -3, false));
+    if (group) return new Song(group.flatMap(x => x.notes));
+  }
+
+  static parseSongSequence(i: Peekable<Song>): Song | undefined {
+    const group = i.match(parseCollection(Song.parseSongChord, -122, true));
+    if (group) return group.reduce((a, b) => a.append(b));
+  }
+
+  static parseSongGroup(i: Peekable<Song>): Song | undefined {
+    return i.match(parseGroup(Song.parseSongSequence));
+  }
+
+  static parseSongVarDecl(i: Peekable<Song>): Song | undefined {
+    if (!i.matchExact(-11)) return;
+    const varIndex = i.match(parseNumber);
+    if (varIndex === undefined) return;
+    const group = i.match(Song.parseSongGroup);
+    if (!group) return;
+    if (!i.setVar(varIndex, group)) return;
+    return group;
+  }
+
+  static parseSongVar(i: Peekable<Song>): Song | undefined {
+    if (!i.matchExact(-11)) return;
+    const varIndex = i.match(parseNumber);
+    if (varIndex === undefined) return;
+    return i.getVar(varIndex);
+  }
+
+  public static fromSignals(signals: number[], legacy?: boolean): [Song, number, number, number[]] | undefined {
+    // Look for song
+    const i = new Peekable<Song>(signals);
+
+    while (i.peek() !== undefined) {
+      let songStart = i.position;
+      if (i.next() === -577) {
+        let song = i.match(Song.parseSongGroup);
+        if (!song) continue;
+        if (!legacy) {
+          song = song.unitConvert(CONVERSION);
+        }
+        return [song, songStart, i.position-1, signals.slice(songStart, i.position)];
+      }
+    }
+    return;
+  }
+
   public static senderSong(sender: number): Song {
     const senderStr = sender.toString().padStart(4, "0");
     const digits = [...senderStr].map(x => parseInt(x));
@@ -38,94 +145,16 @@ export class Song {
     }))
     return new Song(notes);
   }
-
-  public toSignals(): number[] {
-    const signals = [];
-    signals.push(-577);
-    signals.push(-14);
-    for (const note of this.notes) {
-      signals.push(-605003);
-      for (let number of [note.time, note.length, note.frequency]) {
-        number *= 1000;
-        if (number < 0) {
-          signals.push(-1);
-          number *= -1;
-        }
-        signals.push(~~(number / 1000))
-        if (~~(number % 1000) !== 0) {
-          signals.push(-10);
-          for (let i = (~~(number % 1000)).toString().length; i < 3; i++) {
-            signals.push(0);
-          }
-          signals.push(~~(number % 1000));
-        };
-        signals.push(-3);
-      }
-    }
-    if (signals.length > 2) signals.pop();
-    signals.push(-15);
-    return signals;
-  }
-
-  public static fromSignals(signals: number[]): [Song, number, number] | undefined {
-    // Look for song
-    for (let songStart = 0; songStart < signals.length; songStart++) {
-      if (signals[songStart] !== -577) continue;
-      if (signals[songStart + 1] !== -14) continue;
-      let i = songStart + 2;
-      const notes: Note[] = [];
-      let valid = true;
-      while (signals[i] !== -15) {
-        // Note
-        if (signals[i++] !== -605003) {
-          valid = false;
-          break;
-        }
-        const note = [];
-        for (let n = 0; n < 3; n++) {
-          let sign = 1;
-          let number = 0;
-          let precision = 1;
-          if (signals[i] === -1) {
-            sign = -1;
-            i++;
-          }
-          while (signals[i] >= 0) {
-            const digit = signals[i];
-            number *= Math.pow(10, digit.toString().length)
-            number += digit;
-            i++;
-          }
-          if (signals[i] === -10) {
-            i++;
-            while (signals[i] >= 0) {
-              const digit = signals[i];
-              precision /= Math.pow(10, digit.toString().length)
-              number += precision * digit;
-              i++;
-            }
-          }
-          if (signals[i] === -3) {
-            i++;
-          }
-          note.push(number * sign);
-        }
-        notes.push({time: note[0], length: note[1], frequency: note[2]});
-      }
-      if (valid) return [new Song(notes), songStart, i];
-    }
-    return;
-  }
 }
 
 export function processSongs(messages: Message[]): Message[] {
   return messages
     .map(m => {
-      const songResult = Song.fromSignals(m.signals);
+      const songResult = Song.fromSignals(m.signals, m.receivedAt < SONG_LEGACY_CHANGE_TIME);
       if (!songResult) return m;
-      const [song, start, end] = songResult;
+      const [song, start, end, songSignals] = songResult;
       const cutSong = [...m.signals.slice(0, start + 2), -25, ...m.signals.slice(end)];
 
-      return {...m, signals: cutSong, tags: [...m.tags, "song"], song}
+      return {...m, signals: cutSong, tags: [...m.tags, "song"], song, songSignals}
     });
 }

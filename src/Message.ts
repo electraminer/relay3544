@@ -16,4 +16,5 @@ export interface Message {
   image?: Image;
   // Song of the message added by post processing
   song?: Song;
+  songSignals?: number[];
 }

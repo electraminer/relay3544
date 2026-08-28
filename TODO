@@ -1,4 +1,4 @@
-☐ Import from file
+☐ Import from file and into text box
 ☐ Change color algorithm to match DSCR
 ☐ Dictionary grouping
 ☐ Multiple dictionaries
@@ -11,10 +11,14 @@
 ☐ Fix copying onto all new lines
 ☐ Noscript tag / no webgl tag
 ☐ Music editor
-☐ Color / html formatting in definitions
 ☐ Add | formatting to dictionary
 ☐ Add link to DSVR
 ☐ Add music playlist/looping
-☐ .trim() lines
 ☐ change websocket connection
 ☐ spoiler tags / spoiler channels
+☐ Minor fix on italic formatting
+☐ Fix clipped signal sound playing
+☐ Improve music somehow
+☐ Display color formatting in message editor
+☐ Display when call sign is conflicting (readonly)
+☐ Fix dict not loading before open
