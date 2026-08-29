@@ -38,18 +38,9 @@ function getParensAtIndex(
   index: number,
 ): [number[], number] {
   let insideParens: number[] = [];
-  while (signals[index] !== -14 || signals[index - 1] === -42) {
-    if (signals[index] === -42 && signals[index - 1] === -42) {
-      // Signal Signal (escape escape)
-      insideParens.push(-42);
-    } else if (signals[index] === -42) {
-      // Signal (escape)
-      const lastSignal = insideParens.pop();
-      insideParens.push(-Math.abs(lastSignal ?? -42));
-    } else {
-      insideParens.push(signals[index]);
-    }
-    index--;
+  const start = signals[index--];
+  while (signals[index] !== start + 1) {
+    insideParens.push(signals[index--]);
     if (index < 0) throw new Error("Parens did not end");
   }
   return [insideParens.toReversed(), index - 1];
@@ -86,8 +77,12 @@ function getValueAtIndex(
 ): [number[] | null, number] {
   if (index === -1) {
     return [null, -1];
-  } else if (signals[index] === -15) {
-    return getParensAtIndex(signals, index - 1);
+  } else if (
+    signals[index] === -15 ||
+    signals[index] === -140413 ||
+    signals[index] === -140415
+  ) {
+    return getParensAtIndex(signals, index);
   } else if (signals[index] < 0) {
     return [[signals[index]], index - 1];
   } else {
