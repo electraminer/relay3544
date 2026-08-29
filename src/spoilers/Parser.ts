@@ -92,12 +92,15 @@ export function parseGroup<T, V>(
   contents: (i: Peekable<V>) => T | undefined,
 ): (i: Peekable<V>) => T | undefined {
   return (i) => {
-    if (!i.matchExact(-14)) return;
+    const start = i.matchSignal(
+      (x) => x === -14 || x === -140412 || x === -140414,
+    );
+    if (!start) return;
 
     const group = i.match(contents);
     if (!group) return;
 
-    if (!i.matchExact(-15)) return;
+    if (!i.matchExact(start - 1)) return;
 
     return group;
   };
