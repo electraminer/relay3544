@@ -1,6 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import "./Dictionary.css";
 import { Table } from "./Table";
+import { sign } from "three/tsl";
 
 const DICT_KEY = "relay-dictionary";
 const SIGFMT_KEY = "relay-signal-fmt";
@@ -289,6 +290,7 @@ export function Dictionary(props: {
   onChangeDict: (dict: Map<number, DictEntry>) => void;
   ref?: React.Ref<DictionaryHandle>;
 }) {
+  const [showJson, setShowJson] = useState(false);
   const [detail, setDetail] = useState(false);
   const [focus, setFocus] = useState<number>(-Infinity);
 
@@ -478,34 +480,61 @@ export function Dictionary(props: {
   return (
     <div className="dict">
       <div className="dict-editor-controls">
-        <button
-          onClick={() => {
-            const confirmation = confirm(
-              "Are you sure you want to import a dictionary?",
-            );
-            if (!confirmation) return;
-            navigator.clipboard.readText().then((text) => {
-              try {
-                const [dict, sigFmt, numFmt] = importDict(text);
-                setDict(dict);
-                setSignalFmt(sigFmt);
-                setNumberFmt(numFmt);
-              } catch (e) {}
-            });
+        <label className="button" htmlFor="import">→Import</label>
+        <input id="import" type="file" hidden
+          accept=".json,.save,application/json"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = ""; // Don't save the filename
+            if (!file) return;
+            try {
+              const text = await file.text();
+              const [newDict, sigFmt, numFmt] = importDict(text);
+              setDict(newDict);
+              setSignalFmt(sigFmt);
+              setNumberFmt(numFmt);
+            } catch (err) {
+              alert("Could not import: " + (err as Error).message);
+            }
           }}
-        >
-          →Import
-        </button>
+        />
         <button
+          className="button"
           onClick={() => {
-            navigator.clipboard.writeText(
-              exportDict(dict, signalFmt, numberFmt),
-            );
+            const json = exportDict(dict, signalFmt, numberFmt);
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "dictionary.json";
+            a.click();
+            URL.revokeObjectURL(url);
           }}
         >
           Export→
         </button>
-      </div>
+        <button className={`button ${showJson && "selected"}`}
+          onClick={() => setShowJson(x => !x)}>JSON</button>
+      </div> 
+      {showJson && <textarea
+        className="dict-editor-notes"
+        value={exportDict(dict, signalFmt, numberFmt)}
+        spellCheck={false}
+        placeholder="Import JSON file"
+        autoComplete="off"
+        onPaste={(e) => {
+          try {
+            const confirmation = confirm(
+              "Are you sure you want to import a dictionary?",
+            );
+            if (!confirmation) return;
+            const [dict, sigFmt, numFmt] = importDict(e.clipboardData.getData("text/plain"));
+            setDict(dict);
+            setSignalFmt(sigFmt);
+            setNumberFmt(numFmt);
+          } catch (e) {}
+        }}
+      />}
       <Table
         ref={containerRef}
         columns={["Signal", "Definition"]}

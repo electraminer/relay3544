@@ -31,7 +31,7 @@ body,
   overflow: none;
 }
 
-button {
+button, .button {
   background: var(--color-text);
   color: var(--color-background);
   border: 1px solid var(--color-back-highlight);
@@ -44,17 +44,19 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: center;
+  padding: 1px 4px;
 }
 
-button:hover {
+button:hover, .button:hover {
   border-color: var(--color-grayed);
 }
 
-button:active {
+button:active, .button:active {
   border-color: var(--color-text);
 }
 
-button:disabled,
-button.selected {
+button:disabled, .button:disabled,
+button.selected, .button.selected {
   background-color: var(--color-grayed);
 }
