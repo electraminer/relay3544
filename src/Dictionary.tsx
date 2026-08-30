@@ -1,7 +1,6 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import "./Dictionary.css";
 import { Table } from "./Table";
-import { sign } from "three/tsl";
 
 const DICT_KEY = "relay-dictionary";
 const SIGFMT_KEY = "relay-signal-fmt";
@@ -480,8 +479,13 @@ export function Dictionary(props: {
   return (
     <div className="dict">
       <div className="dict-editor-controls">
-        <label className="button" htmlFor="import">→Import</label>
-        <input id="import" type="file" hidden
+        <label className="button" htmlFor="import">
+          →Import
+        </label>
+        <input
+          id="import"
+          type="file"
+          hidden
           accept=".json,.save,application/json"
           onChange={async (e) => {
             const file = e.target.files?.[0];
@@ -513,28 +517,36 @@ export function Dictionary(props: {
         >
           Export→
         </button>
-        <button className={`button ${showJson && "selected"}`}
-          onClick={() => setShowJson(x => !x)}>JSON</button>
-      </div> 
-      {showJson && <textarea
-        className="dict-editor-notes"
-        value={exportDict(dict, signalFmt, numberFmt)}
-        spellCheck={false}
-        placeholder="Import JSON file"
-        autoComplete="off"
-        onPaste={(e) => {
-          try {
-            const confirmation = confirm(
-              "Are you sure you want to import a dictionary?",
-            );
-            if (!confirmation) return;
-            const [dict, sigFmt, numFmt] = importDict(e.clipboardData.getData("text/plain"));
-            setDict(dict);
-            setSignalFmt(sigFmt);
-            setNumberFmt(numFmt);
-          } catch (e) {}
-        }}
-      />}
+        <button
+          className={`button ${showJson && "selected"}`}
+          onClick={() => setShowJson((x) => !x)}
+        >
+          JSON
+        </button>
+      </div>
+      {showJson && (
+        <textarea
+          className="dict-editor-notes"
+          value={exportDict(dict, signalFmt, numberFmt)}
+          spellCheck={false}
+          placeholder="Import JSON file"
+          autoComplete="off"
+          onPaste={(e) => {
+            try {
+              const confirmation = confirm(
+                "Are you sure you want to import a dictionary?",
+              );
+              if (!confirmation) return;
+              const [dict, sigFmt, numFmt] = importDict(
+                e.clipboardData.getData("text/plain"),
+              );
+              setDict(dict);
+              setSignalFmt(sigFmt);
+              setNumberFmt(numFmt);
+            } catch (e) {}
+          }}
+        />
+      )}
       <Table
         ref={containerRef}
         columns={["Signal", "Definition"]}
