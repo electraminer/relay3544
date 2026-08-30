@@ -20,6 +20,7 @@ export class Song {
 
   public play(startTime: number): void {
     for (const { time, length, frequency } of this.notes) {
+      if (frequency === 0) continue;
       superdough({ freq: frequency, s: "triangle" }, startTime + time, length);
     }
   }
