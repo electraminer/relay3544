@@ -48,12 +48,15 @@ export function tokenize(
 
     for (const def of dictionary) {
       const [signal, entry] = def;
-      const token = entry.def;
-      if (
-        value.substring(i, i + token.length).toUpperCase() ===
-        token.toUpperCase()
-      ) {
-        signalsAtChar[i + token.length] ??= [...signals, signal];
+      const tokens = [entry.def, ...entry.aliases];
+      for (const token of tokens) {
+        if (
+          value.substring(i, i + token.length).toUpperCase() ===
+          token.toUpperCase()
+        ) {
+          signalsAtChar[i + token.length] ??= [...signals, signal];
+          break;
+        }
       }
     }
   }
