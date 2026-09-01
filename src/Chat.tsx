@@ -7,7 +7,11 @@ import { decompile, doubleSeparator, separator } from "./converter";
 import { processCommands } from "./spoilers/Command";
 import { processSongs, Song } from "./spoilers/Song";
 import { processImages, type Image } from "./spoilers/Image";
-import { displayedInsideChannel, filterByChannel, processChannel } from "./spoilers/Channel";
+import {
+  displayedInsideChannel,
+  filterByChannel,
+  processChannel,
+} from "./spoilers/Channel";
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
@@ -26,14 +30,17 @@ export function Chat(props: {
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_MESSAGE_COUNT);
   const containerRef = useRef<HTMLDivElement>(null);
-  const restoreScrollRef = useRef<number | null>(null);
+  const restoreScrollRef = useRef<number>(0);
   const pendingBottomRef = useRef(false);
 
   const [readTime, setReadTime] = useState(Date.now());
 
-  const messages = props.messages.getMessagesAndLoadLater(visibleCount, filterByChannel(props.channel));
-  const unread = messages.filter(x => x.receivedAt > readTime).length
-  
+  const messages = props.messages.getMessagesAndLoadLater(
+    visibleCount,
+    filterByChannel(props.channel),
+  );
+  const unread = messages.filter((x) => x.receivedAt > readTime).length;
+
   let processed = messages;
   processed = processChannel(processed, props.channel);
   processed = processCommands(processed);
@@ -56,10 +63,7 @@ export function Chat(props: {
       return;
     }
     const restore = restoreScrollRef.current;
-    if (restore !== null) {
-      el.scrollTop = el.scrollHeight - restore;
-      // restoreScrollRef.current = null;
-    }
+    el.scrollTop = el.scrollHeight - restore;
   }, [messages.length, pendingBottomRef.current]);
 
   // Autoscroll to the newest message, but only while no extra history has
@@ -78,7 +82,9 @@ export function Chat(props: {
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
-    const isScrolling = el.scrollHeight - (el.scrollTop + el.clientHeight) >= SCROLL_START_THRESHOLD;
+    const isScrolling =
+      el.scrollHeight - (el.scrollTop + el.clientHeight) >=
+      SCROLL_START_THRESHOLD;
     setIsScrolling(isScrolling);
     if (isScrolling && el.scrollTop <= SCROLL_EDGE_THRESHOLD) {
       restoreScrollRef.current = el.scrollHeight - el.scrollTop;

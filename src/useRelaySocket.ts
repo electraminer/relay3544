@@ -40,9 +40,10 @@ export function useRelaySocket(
   const [_, setMessagesVer] = useState<number>(0);
 
   const messagesRef = useRef<MessageHistory | null>(null);
-  if (!messagesRef.current) messagesRef.current = new MessageHistory(
-    () => setMessagesVer(x => x + 1),
-  );
+  if (!messagesRef.current)
+    messagesRef.current = new MessageHistory(() =>
+      setMessagesVer((x) => x + 1),
+    );
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(
     localStorage.getItem("relay-notifications") !== "false",
@@ -95,7 +96,8 @@ export function useRelaySocket(
           m.id === message.id &&
           m.sender === message.sender &&
           m.signals.join(" ") === message.signals.join(" ")
-        ) return;
+        )
+          return;
       }
 
       if (

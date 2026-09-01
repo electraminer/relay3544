@@ -94,11 +94,11 @@ export async function loadRecentMessages(
   match: (message: Message) => boolean,
   limit: number,
   startKey?: number,
-): Promise<{all: Message[], filtered: Message[], nextKey: number}> {
+): Promise<{ all: Message[]; filtered: Message[]; nextKey: number }> {
   const all: Message[] = [];
   const filtered: Message[] = [];
   startKey ??= Infinity;
-  if (limit <= 0) return {all, filtered, nextKey: startKey};
+  if (limit <= 0) return { all, filtered, nextKey: startKey };
 
   const db = await openDb();
   const store = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME);
@@ -112,7 +112,7 @@ export async function loadRecentMessages(
         resolve({
           all: all.toReversed(),
           filtered: filtered.toReversed(),
-          nextKey: -1
+          nextKey: -1,
         });
         return;
       }
@@ -123,7 +123,7 @@ export async function loadRecentMessages(
         resolve({
           all: all.toReversed(),
           filtered: filtered.toReversed(),
-          nextKey: (cursor.key as number) - 1
+          nextKey: (cursor.key as number) - 1,
         });
         return;
       }
@@ -171,18 +171,17 @@ export class MessageHistory {
   /** Called whenever the message history is updated. */
   private onUpdate: () => void;
   version: number;
-  
 
   constructor(onUpdate: () => void) {
     this.ready = migrateLegacyMessages()
       .then(onUpdate)
-      .catch((e) =>console.log("message migration error", e));
+      .catch((e) => console.log("message migration error", e));
     this.nextKey = Infinity;
     this.version = 0;
     this.onUpdate = () => {
       onUpdate();
       this.version++;
-    }
+    };
   }
 
   /** Append a message to the end of the history and persist it. */
@@ -190,11 +189,14 @@ export class MessageHistory {
     this.history.push(message);
     this.onUpdate();
     // Asynchronously add the message to the DB, no need to wait for it because it's already cached.
-    this.ready.then(() => appendStoredMessage(message))
+    this.ready.then(() => appendStoredMessage(message));
   }
 
-  getLoadedMessages(limit: number, filter?: (message: Message) => boolean): Message[] {
-    filter ??= (() => true);
+  getLoadedMessages(
+    limit: number,
+    filter?: (message: Message) => boolean,
+  ): Message[] {
+    filter ??= () => true;
     let messages = [];
     for (let i = this.history.length - 1; i >= 0; i--) {
       const message = this.history[i];
@@ -205,11 +207,18 @@ export class MessageHistory {
     return messages.toReversed();
   }
 
-  async loadMoreMessages(limit: number, filter?: (message: Message) => boolean): Promise<Message[]> {
-    filter ??= (() => true);
+  async loadMoreMessages(
+    limit: number,
+    filter?: (message: Message) => boolean,
+  ): Promise<Message[]> {
+    filter ??= () => true;
     await this.ready;
 
-    const {all, filtered, nextKey} = await loadRecentMessages(filter, limit, this.nextKey);
+    const { all, filtered, nextKey } = await loadRecentMessages(
+      filter,
+      limit,
+      this.nextKey,
+    );
     if (this.nextKey > nextKey) {
       this.nextKey = nextKey;
       this.history.splice(0, 0, ...all);
@@ -219,18 +228,26 @@ export class MessageHistory {
     return filtered;
   }
 
-  getMessagesAndLoadLater(limit: number, filter?: (message: Message) => boolean): Message[] {
-
+  getMessagesAndLoadLater(
+    limit: number,
+    filter?: (message: Message) => boolean,
+  ): Message[] {
     const messages = this.getLoadedMessages(limit, filter);
     // Asynchronously start loading the missing messages, but don't wait for them
     this.loadMoreMessages(limit - messages.length, filter);
-    
+
     return messages;
   }
 
-  async getMessages(limit: number, filter?: (message: Message) => boolean): Promise<Message[]> {
+  async getMessages(
+    limit: number,
+    filter?: (message: Message) => boolean,
+  ): Promise<Message[]> {
     const messages = this.getLoadedMessages(limit, filter);
-    const newMessages = await this.loadMoreMessages(limit - messages.length, filter);
-    return [ ...newMessages, ...messages];
+    const newMessages = await this.loadMoreMessages(
+      limit - messages.length,
+      filter,
+    );
+    return [...newMessages, ...messages];
   }
 }
