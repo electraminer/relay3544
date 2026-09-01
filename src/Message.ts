@@ -166,8 +166,6 @@ export class MessageHistory {
   private history: Message[] = [];
   /** The next key to be loaded, going backward, if the user loads further into the past. */
   private nextKey: number;
-  /** The number of new messages added since the MessageHistory was made. */
-  private newCount: number;
   /** Resolves once the one-time localStorage migration has finished. */
   readonly ready: Promise<void>;
   /** Called whenever the message history is updated. */
@@ -180,7 +178,6 @@ export class MessageHistory {
       .then(onUpdate)
       .catch((e) =>console.log("message migration error", e));
     this.nextKey = Infinity;
-    this.newCount = 0;
     this.version = 0;
     this.onUpdate = () => {
       onUpdate();
@@ -192,13 +189,8 @@ export class MessageHistory {
   add(message: Message) {
     this.history.push(message);
     this.onUpdate();
-    this.newCount++;
     // Asynchronously add the message to the DB, no need to wait for it because it's already cached.
     this.ready.then(() => appendStoredMessage(message))
-  }
-
-  getNewCount(): number {
-    return this.newCount;
   }
 
   getLoadedMessages(limit: number, filter?: (message: Message) => boolean): Message[] {

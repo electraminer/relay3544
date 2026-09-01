@@ -11,7 +11,8 @@ import { displayedInsideChannel, filterByChannel, processChannel } from "./spoil
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
-const SCROLL_EDGE_THRESHOLD = 40;
+const SCROLL_EDGE_THRESHOLD = 1000;
+const SCROLL_START_THRESHOLD = 40;
 
 export function Chat(props: {
   messages: MessageHistory;
@@ -25,13 +26,13 @@ export function Chat(props: {
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_MESSAGE_COUNT);
   const containerRef = useRef<HTMLDivElement>(null);
-  const restoreScrollRef = useRef<{ height: number; top: number } | null>(null);
+  const restoreScrollRef = useRef<number | null>(null);
   const pendingBottomRef = useRef(false);
 
+  const [readTime, setReadTime] = useState(Date.now());
+
   const messages = props.messages.getMessagesAndLoadLater(visibleCount, filterByChannel(props.channel));
-  const newCount = props.messages.getNewCount();
-  const [readCount, setReadCount] = useState(newCount);
-  const unread = newCount - readCount;
+  const unread = messages.filter(x => x.receivedAt > readTime).length
   
   let processed = messages;
   processed = processChannel(processed, props.channel);
@@ -50,14 +51,16 @@ export function Chat(props: {
     if (pendingBottomRef.current) {
       el.scrollTop = el.scrollHeight;
       pendingBottomRef.current = false;
+      restoreScrollRef.current = 0;
+      setReadTime(Date.now());
       return;
     }
     const restore = restoreScrollRef.current;
-    if (restore) {
-      el.scrollTop = el.scrollHeight - restore.height + restore.top;
-      restoreScrollRef.current = null;
+    if (restore !== null) {
+      el.scrollTop = el.scrollHeight - restore;
+      // restoreScrollRef.current = null;
     }
-  }, [visibleCount]);
+  }, [messages.length, pendingBottomRef.current]);
 
   // Autoscroll to the newest message, but only while no extra history has
   // been lazy-loaded — otherwise a new message would yank the view away
@@ -70,23 +73,17 @@ export function Chat(props: {
     const el = containerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
     setIsScrolling(false);
-    setReadCount(newCount);
-  }, [newCount, props.messages.version]);
+    setReadTime(Date.now());
+  }, [unread, props.messages.version === 0]);
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
-    setIsScrolling(
-      el.scrollHeight - (el.scrollTop + el.clientHeight) >=
-        SCROLL_EDGE_THRESHOLD,
-    );
-    if (el.scrollTop <= SCROLL_EDGE_THRESHOLD) {
-      restoreScrollRef.current = { height: el.scrollHeight, top: el.scrollTop };
+    const isScrolling = el.scrollHeight - (el.scrollTop + el.clientHeight) >= SCROLL_START_THRESHOLD;
+    setIsScrolling(isScrolling);
+    if (isScrolling && el.scrollTop <= SCROLL_EDGE_THRESHOLD) {
+      restoreScrollRef.current = el.scrollHeight - el.scrollTop;
       setVisibleCount((count) => count + LOAD_STEP);
-    } else if (
-      el.scrollHeight - el.scrollTop - el.clientHeight <=
-        SCROLL_EDGE_THRESHOLD &&
-      visibleCount > INITIAL_MESSAGE_COUNT
-    ) {
+    } else if (!isScrolling && visibleCount > INITIAL_MESSAGE_COUNT) {
       setVisibleCount(INITIAL_MESSAGE_COUNT);
     }
   }
@@ -94,6 +91,7 @@ export function Chat(props: {
   function handleScrollToBottom() {
     pendingBottomRef.current = true;
     setVisibleCount(INITIAL_MESSAGE_COUNT);
+    setReadTime(Date.now());
   }
 
   return (
