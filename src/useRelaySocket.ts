@@ -11,6 +11,7 @@ import {
 import { type AudioPlayer } from "./AudioPlayer";
 import { Song } from "./spoilers/Song";
 import { getMessageChannel } from "./spoilers/Channel";
+import { renderConfetti } from "./spoilers/Confetti";
 
 const SOCKET_URL = "wss://dscr-relay.dixonary.co.uk/";
 
@@ -25,6 +26,8 @@ export interface Relay {
   send: (msg: number[]) => void;
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
+  confettiEnabled: boolean;
+  setConfettiEnabled: (enabled: boolean) => void;
 }
 
 export function useRelaySocket(
@@ -44,6 +47,15 @@ export function useRelaySocket(
     messagesRef.current = new MessageHistory(() =>
       setMessagesVer((x) => x + 1),
     );
+
+  const [confettiEnabled, setConfettiEnabled] = useState<boolean>(
+    localStorage.getItem("relay-confetti") !== "false",
+  );
+  const confettiEnabledRef = useRef(confettiEnabled);
+  useEffect(() => {
+    confettiEnabledRef.current = confettiEnabled;
+    localStorage.setItem("relay-confetti", String(soundEnabled));
+  }, [confettiEnabled]);
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(
     localStorage.getItem("relay-notifications") !== "false",
@@ -107,6 +119,11 @@ export function useRelaySocket(
       ) {
         audioRef.current.play(Song.senderSong(message.sender));
       }
+
+      if (confettiEnabledRef.current && channelOpen) {
+        renderConfetti(message);
+      }
+
       await messagesRef.current!.add(message);
     }
 
@@ -188,5 +205,7 @@ export function useRelaySocket(
     send,
     soundEnabled,
     setSoundEnabled,
+    confettiEnabled,
+    setConfettiEnabled,
   };
 }

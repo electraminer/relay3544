@@ -17,7 +17,15 @@ export function Toolbar(props: {
   audio: AudioPlayer;
 }) {
   const { relay, dictOpen, onToggleDict, imageOpen, onToggleImage } = props;
-  const { code, online, join, soundEnabled, setSoundEnabled } = relay;
+  const {
+    code,
+    online,
+    join,
+    soundEnabled,
+    setSoundEnabled,
+    confettiEnabled,
+    setConfettiEnabled,
+  } = relay;
   const [codeField, setCodeField] = useState(code.toString());
 
   return (
@@ -39,6 +47,16 @@ export function Toolbar(props: {
         <img src="/Steam_icon_logo.svg" />
       </a>
       <div className="toolbar-spacer" />
+      <button
+        className={`toolbar-sidebar-toggle
+          ${confettiEnabled ? "" : "toolbar-sidebar-toggle--closed"}`}
+        title={
+          confettiEnabled ? "Disable confetti effect" : "Enable confetti effect"
+        }
+        onClick={() => setConfettiEnabled(!confettiEnabled)}
+      >
+        <span className="material-symbols-outlined">celebration</span>
+      </button>
       {props.audio.currentSongId ? (
         <button
           className={`toolbar-sidebar-toggle
