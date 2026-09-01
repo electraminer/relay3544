@@ -1,5 +1,5 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { type Message } from "./Message";
+import { MessageHistory, type Message } from "./Message";
 import { entryStyle, type DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
 import { type AudioPlayer } from "./AudioPlayer";
@@ -7,14 +7,14 @@ import { decompile, doubleSeparator, separator } from "./converter";
 import { processCommands } from "./spoilers/Command";
 import { processSongs, Song } from "./spoilers/Song";
 import { processImages, type Image } from "./spoilers/Image";
-import { displayedInsideChannel, filterChannels } from "./spoilers/Channel";
+import { displayedInsideChannel, filterByChannel, processChannel } from "./spoilers/Channel";
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
 const SCROLL_EDGE_THRESHOLD = 40;
 
 export function Chat(props: {
-  messages: Message[];
+  messages: MessageHistory;
   dictionary: Map<number, DictEntry>;
   self: number;
   channel: number | null;
@@ -28,14 +28,16 @@ export function Chat(props: {
   const restoreScrollRef = useRef<{ height: number; top: number } | null>(null);
   const pendingBottomRef = useRef(false);
 
-  const filtered = filterChannels(props.messages, props.channel);
-  const total = filtered.length;
-  const [readCount, setReadCount] = useState(total);
-  const unread = total - readCount;
-  const recent = filtered.slice(-visibleCount);
-  const processed = processCommands(recent);
-  const withImages = processImages(processed);
-  const withSongs = processSongs(withImages);
+  const messages = props.messages.getMessagesAndLoadLater(visibleCount, filterByChannel(props.channel));
+  const newCount = props.messages.getNewCount();
+  const [readCount, setReadCount] = useState(newCount);
+  const unread = newCount - readCount;
+  
+  let processed = messages;
+  processed = processChannel(processed, props.channel);
+  processed = processCommands(processed);
+  processed = processImages(processed);
+  processed = processSongs(processed);
 
   const [isScrolling, setIsScrolling] = useState(false);
 
@@ -68,8 +70,8 @@ export function Chat(props: {
     const el = containerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
     setIsScrolling(false);
-    setReadCount(total);
-  }, [total]);
+    setReadCount(newCount);
+  }, [newCount, props.messages.version]);
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
@@ -77,9 +79,9 @@ export function Chat(props: {
       el.scrollHeight - (el.scrollTop + el.clientHeight) >=
         SCROLL_EDGE_THRESHOLD,
     );
-    if (el.scrollTop <= SCROLL_EDGE_THRESHOLD && visibleCount < total) {
+    if (el.scrollTop <= SCROLL_EDGE_THRESHOLD) {
       restoreScrollRef.current = { height: el.scrollHeight, top: el.scrollTop };
-      setVisibleCount((count) => Math.min(count + LOAD_STEP, total));
+      setVisibleCount((count) => count + LOAD_STEP);
     } else if (
       el.scrollHeight - el.scrollTop - el.clientHeight <=
         SCROLL_EDGE_THRESHOLD &&
@@ -97,7 +99,7 @@ export function Chat(props: {
   return (
     <div className="chat-wrap">
       <div className="chat" ref={containerRef} onScroll={handleScroll}>
-        {withSongs.map((message, i) => (
+        {processed.map((message, i) => (
           <Message
             key={i}
             message={{

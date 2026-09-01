@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Message } from "./Message";
+import { MessageHistory, type Message } from "./Message";
 import {
   codeFromDecimal,
   codeToDecimal,
@@ -13,29 +13,15 @@ import { Song } from "./spoilers/Song";
 import { getMessageChannel } from "./spoilers/Channel";
 
 const SOCKET_URL = "wss://dscr-relay.dixonary.co.uk/";
-const MESSAGES_STORAGE_KEY = "relay-messages";
 
 export type SocketStatus = "connecting" | "joining" | "readwrite" | "readonly";
-
-function loadMessages(): Message[] {
-  try {
-    const raw = localStorage.getItem(MESSAGES_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!parsed) return [];
-    return parsed;
-  } catch (e) {
-    console.log("load error", e);
-    return [];
-  }
-}
 
 export interface Relay {
   code: number;
   join: (code: number) => void;
   status: SocketStatus;
   online: number[];
-  messages: Message[];
+  messages: MessageHistory;
   send: (msg: number[]) => void;
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
@@ -50,12 +36,13 @@ export function useRelaySocket(
 
   const [online, setOnline] = useState<number[]>([]);
 
-  const [messages, setMessages] = useState<Message[]>(loadMessages);
-  const messagesRef = useRef(messages);
-  useEffect(() => {
-    messagesRef.current = messages;
-    localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
-  }, [messages]);
+  // A meaningless version tracker used to re-render on message history update
+  const [_, setMessagesVer] = useState<number>(0);
+
+  const messagesRef = useRef<MessageHistory | null>(null);
+  if (!messagesRef.current) messagesRef.current = new MessageHistory(
+    () => setMessagesVer(x => x + 1),
+  );
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(
     localStorage.getItem("relay-notifications") !== "false",
@@ -94,6 +81,32 @@ export function useRelaySocket(
     let stopped = false;
     let attempt = 0;
     let retryTimeout: number | undefined;
+
+    async function handleIncoming(message: Message) {
+      const messageChannel = getMessageChannel(message.signals);
+      const channelOpen =
+        messageChannel === null ||
+        openChannelsRef.current.includes(messageChannel);
+
+      // Skip messages that have already been seen (most recent 10 are resent each login)
+      const recents = await messagesRef.current!.getMessages(10);
+      for (const m of recents) {
+        if (
+          m.id === message.id &&
+          m.sender === message.sender &&
+          m.signals.join(" ") === message.signals.join(" ")
+        ) return;
+      }
+
+      if (
+        soundEnabledRef.current &&
+        channelOpen &&
+        audioRef.current.currentSongId === null
+      ) {
+        audioRef.current.play(Song.senderSong(message.sender));
+      }
+      await messagesRef.current!.add(message);
+    }
 
     function connect() {
       const ws = new WebSocket(SOCKET_URL);
@@ -140,30 +153,9 @@ export function useRelaySocket(
             receivedAt: Date.now(),
             tags: [],
           };
-          const messageChannel = getMessageChannel(message.signals);
-          const channelOpen =
-            messageChannel === null ||
-            openChannelsRef.current.includes(messageChannel);
-
-          const recentMessages = messagesRef.current.slice(-10);
-          if (
-            recentMessages.find(
-              (m) =>
-                m.id === message.id &&
-                m.sender === message.sender &&
-                m.signals.join(" ") === message.signals.join(" "),
-            )
-          )
-            return;
-
-          if (
-            soundEnabledRef.current &&
-            channelOpen &&
-            audioRef.current.currentSongId === null
-          ) {
-            audioRef.current.play(Song.senderSong(message.sender));
-          }
-          setMessages((m) => [...m, message]);
+          void handleIncoming(message).catch((e) =>
+            console.log("message error", e),
+          );
         }
       };
     }
@@ -190,7 +182,7 @@ export function useRelaySocket(
     join,
     status,
     online,
-    messages,
+    messages: messagesRef.current,
     send,
     soundEnabled,
     setSoundEnabled,
