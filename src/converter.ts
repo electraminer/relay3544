@@ -48,6 +48,7 @@ export function tokenize(
 
     for (const def of dictionary) {
       const [signal, entry] = def;
+      if (!Number.isFinite(signal)) continue;
       const tokens = [entry.def, ...entry.aliases];
       for (const token of tokens) {
         if (

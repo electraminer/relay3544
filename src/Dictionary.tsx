@@ -135,7 +135,6 @@ function exportDict(
     defaultUnderline: Boolean(sigFmt[9]),
     defaultStrikethrough: Boolean(sigFmt[10]),
     defaultInvert: Boolean(sigFmt[11]),
-    defaultAliases: sigFmt[12],
 
     numberBefore: toFormatMode(numFmt[2]),
     numberAfter: toFormatMode(numFmt[3]),
@@ -147,7 +146,6 @@ function exportDict(
     numberUnderline: Boolean(numFmt[9]),
     numberStrikethrough: Boolean(numFmt[10]),
     numberInvert: Boolean(numFmt[11]),
-    numberAliases: numFmt[12],
   };
 
   return JSON.stringify(exported);
@@ -194,7 +192,7 @@ function importDict(json: string): [EditDict, EditDictEntry, EditDictEntry] {
     imported.defaultUnderline ?? false,
     imported.defaultStrikethrough ?? false,
     imported.defaultInvert ?? false,
-    imported.defaultAliases ?? [],
+    [],
   ] as EditDictEntry;
 
   const numFmt = [
@@ -210,7 +208,7 @@ function importDict(json: string): [EditDict, EditDictEntry, EditDictEntry] {
     imported.numberUnderline ?? false,
     imported.numberStrikethrough ?? false,
     imported.numberInvert ?? false,
-    imported.numberAliases ?? [],
+    [],
   ] as EditDictEntry;
 
   return [dict, sigFmt, numFmt];
@@ -494,8 +492,13 @@ export function Dictionary(props: {
   return (
     <div className="dict">
       <div className="dict-editor-controls">
-        <label className="button" htmlFor="import">→Import</label>
-        <input id="import" type="file" hidden
+        <label className="button" htmlFor="import">
+          →Import
+        </label>
+        <input
+          id="import"
+          type="file"
+          hidden
           accept=".json,.save,application/json"
           onChange={async (e) => {
             const file = e.target.files?.[0];
@@ -527,28 +530,36 @@ export function Dictionary(props: {
         >
           Export→
         </button>
-        <button className={`button ${showJson && "selected"}`}
-          onClick={() => setShowJson(x => !x)}>JSON</button>
-      </div> 
-      {showJson && <textarea
-        className="dict-editor-notes"
-        value={exportDict(dict, signalFmt, numberFmt)}
-        spellCheck={false}
-        placeholder="Import JSON file"
-        autoComplete="off"
-        onPaste={(e) => {
-          try {
-            const confirmation = confirm(
-              "Are you sure you want to import a dictionary?",
-            );
-            if (!confirmation) return;
-            const [dict, sigFmt, numFmt] = importDict(e.clipboardData.getData("text/plain"));
-            setDict(dict);
-            setSignalFmt(sigFmt);
-            setNumberFmt(numFmt);
-          } catch (e) {}
-        }}
-      />}
+        <button
+          className={`button ${showJson && "selected"}`}
+          onClick={() => setShowJson((x) => !x)}
+        >
+          JSON
+        </button>
+      </div>
+      {showJson && (
+        <textarea
+          className="dict-editor-notes"
+          value={exportDict(dict, signalFmt, numberFmt)}
+          spellCheck={false}
+          placeholder="Import JSON file"
+          autoComplete="off"
+          onPaste={(e) => {
+            try {
+              const confirmation = confirm(
+                "Are you sure you want to import a dictionary?",
+              );
+              if (!confirmation) return;
+              const [dict, sigFmt, numFmt] = importDict(
+                e.clipboardData.getData("text/plain"),
+              );
+              setDict(dict);
+              setSignalFmt(sigFmt);
+              setNumberFmt(numFmt);
+            } catch (e) {}
+          }}
+        />
+      )}
       <Table
         ref={containerRef}
         columns={["Signal", "Definition"]}
@@ -757,6 +768,7 @@ export function Dictionary(props: {
             value={focusRow[12]}
             inputClass="dict-editor-format"
             itemStyle={() => entryStyle(toDictEntry(focusRow))}
+            disabled={!Number.isFinite(focus)}
             onChange={(items) => {
               console.log("ListInput change", focusRow[12], "->", items);
               changeDict(updateCell(focus, 12, items));

@@ -32,22 +32,22 @@ export function displayedInsideChannel(
   return signals.slice(2);
 }
 
-export function filterChannels(messages: Message[], channel: number | null) {
-  return messages
-    .filter(
-      (m) =>
-        (m.signals[0] !== -65535 && channel === null) ||
-        (m.signals[0] === -65535 && channel === m.signals[1]) ||
-        channel === -65536,
-    )
-    .map((m) =>
-      channel !== -65536 || m.signals[0] !== -65535
-        ? m
-        : {
-            ...m,
-            tags: [...m.tags, "secret"],
-          },
-    );
+export function filterByChannel(channel: number | null) {
+  return (m: Message): boolean =>
+    (m.signals[0] !== -65535 && channel === null) ||
+    (m.signals[0] === -65535 && channel === m.signals[1]) ||
+    channel === -65536;
+}
+
+export function processChannel(messages: Message[], channel: number | null) {
+  return messages.map((m) =>
+    channel !== -65536 || m.signals[0] !== -65535
+      ? m
+      : {
+          ...m,
+          tags: [...m.tags, "secret"],
+        },
+  );
 }
 
 export const NULL_CHANNEL_NAME: number[] = [-111, -65535];

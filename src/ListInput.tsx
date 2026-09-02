@@ -15,6 +15,7 @@ export function ListInput(props: {
   itemClass?: string;
   buttonClass?: string;
   inputClass?: string;
+  disabled?: boolean;
   onChange: (items: string[]) => void;
 }) {
   const [newValue, setNewValue] = useState<string>("");
@@ -51,6 +52,7 @@ export function ListInput(props: {
           style={props.itemStyle?.()}
           value={newValue}
           onChange={(e) => setNewValue(e.target.value)}
+          disabled={props.disabled}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === "Space") addItem();
           }}
@@ -58,6 +60,7 @@ export function ListInput(props: {
         <button
           className={`dict-editor-format-button ${props.buttonClass ?? ""}`}
           onClick={addItem}
+          disabled={props.disabled}
         >
           <Icon name="add" />
         </button>
@@ -73,10 +76,12 @@ export function ListInput(props: {
             style={props.itemStyle?.()}
             value={value}
             onChange={(e) => handleChange(e, i)}
+            disabled={props.disabled}
           />
           <button
             className="dict-editor-format-button"
             onClick={() => removeItem(i)}
+            disabled={props.disabled}
           >
             <Icon name="clear" />
           </button>

@@ -1,5 +1,5 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { type Message } from "./Message";
+import { MessageHistory, type Message } from "./Message";
 import { entryStyle, type DictEntry } from "./Dictionary";
 import { TooltipWrap } from "./Tooltip";
 import { type AudioPlayer } from "./AudioPlayer";
@@ -7,14 +7,19 @@ import { decompile, doubleSeparator, separator } from "./converter";
 import { processCommands } from "./spoilers/Command";
 import { processSongs, Song } from "./spoilers/Song";
 import { processImages, type Image } from "./spoilers/Image";
-import { displayedInsideChannel, filterChannels } from "./spoilers/Channel";
+import {
+  displayedInsideChannel,
+  filterByChannel,
+  processChannel,
+} from "./spoilers/Channel";
 
 const INITIAL_MESSAGE_COUNT = 64;
 const LOAD_STEP = 64;
-const SCROLL_EDGE_THRESHOLD = 40;
+const SCROLL_EDGE_THRESHOLD = 1000;
+const SCROLL_START_THRESHOLD = 40;
 
 export function Chat(props: {
-  messages: Message[];
+  messages: MessageHistory;
   dictionary: Map<number, DictEntry>;
   self: number;
   channel: number | null;
@@ -24,18 +29,27 @@ export function Chat(props: {
   audio: AudioPlayer;
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_MESSAGE_COUNT);
+  const [readCount, setReadCount] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
-  const restoreScrollRef = useRef<{ height: number; top: number } | null>(null);
+  const restoreScrollRef = useRef<number>(0);
   const pendingBottomRef = useRef(false);
 
-  const filtered = filterChannels(props.messages, props.channel);
-  const total = filtered.length;
-  const [readCount, setReadCount] = useState(total);
-  const unread = total - readCount;
-  const recent = filtered.slice(-visibleCount);
-  const processed = processCommands(recent);
-  const withImages = processImages(processed);
-  const withSongs = processSongs(withImages);
+  const [readTime, setReadTime] = useState(Date.now());
+
+  const oldMessages = props.messages.getMessagesAndLoadLater(
+    visibleCount,
+    (x) => filterByChannel(props.channel)(x) && x.receivedAt <= readTime,
+  );
+  const newMessages = props.messages.getMessagesAndLoadLater(
+    readCount,
+    (x) => filterByChannel(props.channel)(x) && x.receivedAt > readTime,
+  );
+
+  let processed = [...oldMessages, ...newMessages];
+  processed = processChannel(processed, props.channel);
+  processed = processCommands(processed);
+  processed = processImages(processed);
+  processed = processSongs(processed);
 
   const [isScrolling, setIsScrolling] = useState(false);
 
@@ -48,56 +62,52 @@ export function Chat(props: {
     if (pendingBottomRef.current) {
       el.scrollTop = el.scrollHeight;
       pendingBottomRef.current = false;
+      restoreScrollRef.current = 0;
+      setReadTime(Date.now());
       return;
     }
     const restore = restoreScrollRef.current;
-    if (restore) {
-      el.scrollTop = el.scrollHeight - restore.height + restore.top;
-      restoreScrollRef.current = null;
-    }
-  }, [visibleCount]);
+    el.scrollTop = el.scrollHeight - restore;
+  }, [oldMessages.length, pendingBottomRef.current]);
 
   // Autoscroll to the newest message, but only while no extra history has
   // been lazy-loaded — otherwise a new message would yank the view away
   // from whatever the user scrolled up to read.
   useLayoutEffect(() => {
-    if (isScrolling) {
-      setVisibleCount(visibleCount + 1);
-      return;
-    }
+    setReadCount(newMessages.length + 10);
+    if (isScrolling) return;
     const el = containerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
+    restoreScrollRef.current = 0;
     setIsScrolling(false);
-    setReadCount(total);
-  }, [total]);
+    setReadTime(Date.now());
+  }, [newMessages.length, props.messages.version === 0]);
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
-    setIsScrolling(
+    const isScrolling =
       el.scrollHeight - (el.scrollTop + el.clientHeight) >=
-        SCROLL_EDGE_THRESHOLD,
-    );
-    if (el.scrollTop <= SCROLL_EDGE_THRESHOLD && visibleCount < total) {
-      restoreScrollRef.current = { height: el.scrollHeight, top: el.scrollTop };
-      setVisibleCount((count) => Math.min(count + LOAD_STEP, total));
-    } else if (
-      el.scrollHeight - el.scrollTop - el.clientHeight <=
-        SCROLL_EDGE_THRESHOLD &&
-      visibleCount > INITIAL_MESSAGE_COUNT
-    ) {
+      SCROLL_START_THRESHOLD;
+    setIsScrolling(isScrolling);
+    if (isScrolling && el.scrollTop <= SCROLL_EDGE_THRESHOLD) {
+      restoreScrollRef.current = el.scrollHeight - el.scrollTop;
+      setVisibleCount((count) => count + LOAD_STEP);
+    } else if (!isScrolling && visibleCount > INITIAL_MESSAGE_COUNT) {
       setVisibleCount(INITIAL_MESSAGE_COUNT);
+      restoreScrollRef.current = 0;
     }
   }
 
   function handleScrollToBottom() {
     pendingBottomRef.current = true;
     setVisibleCount(INITIAL_MESSAGE_COUNT);
+    setReadTime(Date.now());
   }
 
   return (
     <div className="chat-wrap">
       <div className="chat" ref={containerRef} onScroll={handleScroll}>
-        {withSongs.map((message, i) => (
+        {processed.map((message, i) => (
           <Message
             key={i}
             message={{
@@ -115,7 +125,7 @@ export function Chat(props: {
       </div>
       {isScrolling && (
         <button className="scroll-to-bottom" onClick={handleScrollToBottom}>
-          ↓ {unread}
+          ↓ {newMessages.length}
         </button>
       )}
     </div>
