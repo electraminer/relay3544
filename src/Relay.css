@@ -60,7 +60,7 @@ textarea {
   border: 1px solid transparent;
   font-family: var(--font-main);
   font-size: var(--font-size-large);
-  line-height: 1;
+  line-height: 1.25;
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow: auto;
@@ -79,9 +79,15 @@ textarea:disabled {
 }
 
 .highlights mark {
-  color: #ff5555;
-  background: rgba(255, 85, 85, 0.25);
-  border-radius: 2px;
+  background: transparent
+    linear-gradient(var(--mark-bg, transparent), var(--mark-bg, transparent))
+    no-repeat 0 top / 100% 1.25em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+mark.mark--parity-0 {
+  opacity: 0.75;
 }
 
 textarea {
@@ -279,4 +285,8 @@ textarea.invalid {
 .message-button .material-symbols-outlined {
   font-size: 20px !important;
   margin: auto;
+}
+
+.text-signal {
+  display: inline-block;
 }

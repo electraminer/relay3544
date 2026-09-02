@@ -222,6 +222,7 @@ export function entryStyle(entry: DictEntry) {
     style["color"] = "var(--color-background)";
   } else {
     style["color"] = entry.color;
+    style["backgroundColor"] = "var(--color-background)";
   }
 
   style.fontWeight = entry.bold ? "bold" : undefined;
