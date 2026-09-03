@@ -1,91 +1,102 @@
 import type { DictEntry } from "./Dictionary";
 
-export class CompileError extends Error {
-  readonly start: number;
-  readonly end: number;
-
-  constructor(message: string, start: number, end: number) {
-    super(message);
-    this.name = "CompileError";
-    this.start = start;
-    this.end = end;
-  }
-}
-
-export class MultiCompileError extends Error {
-  readonly errors: CompileError[];
-
-  constructor(errors: CompileError[]) {
-    super(errors.map((e) => e.message).join("; "));
-    this.name = "MultiCompileError";
-    this.errors = errors;
-  }
+export interface PositionedSignal {
+  signal: number | null;
+  start: number;
+  end: number;
 }
 
 export function tokenize(
   value: string,
+  startIdx: number,
   dictionary: Map<number, DictEntry>,
-): [number[], number] {
-  const signalsAtChar: Record<number, number[] | undefined> = { 0: [] };
-  let bestSignals: number[] = [];
-  let length = 0;
-  for (let i = 0; i <= value.length; i++) {
+): PositionedSignal[] {
+  const signalsAtChar: Record<number, PositionedSignal[] | undefined> = {
+    [startIdx]: [],
+  };
+  let bestSignals: PositionedSignal[] = [];
+  for (let i = startIdx; i <= value.length; i++) {
     const signals = signalsAtChar[i];
     if (!signals) continue;
     bestSignals = signals;
-    length = i;
 
     // Parse numbers
     const match = value.substring(i).match(/^\|?(-?[0-9]+)/);
     if (match !== null) {
-      const number = parseFloat(match[1]);
-      signalsAtChar[i + match[0].length] ??= [...signals, number];
+      const signal = parseFloat(match[1]);
+      signalsAtChar[i + match[0].length] ??= [
+        ...signals,
+        {
+          signal,
+          start: i,
+          end: i + match[0].length,
+        },
+      ];
     }
 
     if (value.charAt(i) && value.charAt(i).trim() === "") {
       signalsAtChar[i + 1] ??= signals;
     }
 
+    const lowestAliasesByLength = new Map<number, number>();
     for (const def of dictionary) {
       const [signal, entry] = def;
-      const token = entry.def;
-      if (
-        value.substring(i, i + token.length).toUpperCase() ===
-        token.toUpperCase()
-      ) {
-        signalsAtChar[i + token.length] ??= [...signals, signal];
+      if (!Number.isFinite(signal)) continue;
+      const tokens = [entry.def, ...entry.aliases];
+      for (const token of tokens) {
+        if (
+          value.substring(i, i + token.length).toUpperCase() ===
+          token.toUpperCase()
+        ) {
+          // If multiple things match, pick based on the one with fewer aliases
+          // (to allow aliases to be an alternative for referincing duplicates)
+          const prevLowest =
+            lowestAliasesByLength.get(token.length) ?? Infinity;
+          if (tokens.length < prevLowest) {
+            lowestAliasesByLength.set(token.length, tokens.length);
+            signalsAtChar[i + token.length] ??= [
+              ...signals,
+              {
+                signal,
+                start: i,
+                end: i + token.length,
+              },
+            ];
+          }
+        }
       }
     }
   }
-  return [bestSignals, length];
+  return bestSignals;
 }
 
 export function compile(
   value: string,
   dictionary: Map<number, DictEntry>,
-): string {
-  let [signals, length] = tokenize(value, dictionary);
-  if (length < value.length) {
-    const errors = [];
-    while (length < value.length) {
-      let l;
-      let start = length;
-      do {
-        length++;
-        [signals, l] = tokenize(value.substring(length), dictionary);
-      } while (l === 0 && length < value.length);
-      errors.push(
-        new CompileError(
-          `${value.substring(start, length).trim()} is not a valid token`,
-          start,
-          length,
-        ),
-      );
-      length += l;
+): PositionedSignal[] {
+  let signals = [];
+  let index = 0;
+  while (true) {
+    if (index >= value.length) return signals;
+    if (value.charAt(index).trim().length === 0) {
+      index++;
+      continue;
     }
-    throw new MultiCompileError(errors);
+
+    signals.push(...tokenize(value, index, dictionary));
+    const nextIndex = signals.at(-1)?.end ?? 0;
+    if (nextIndex <= index) {
+      const prevError = signals.at(-1);
+      if (prevError && prevError.signal === null && prevError.end === index) {
+        prevError.end++;
+      } else {
+        signals.push({ signal: null, start: index, end: index + 1 });
+      }
+      index++;
+    } else {
+      index = nextIndex;
+    }
   }
-  return signals.join(" ");
 }
 
 export function decompile(
@@ -93,33 +104,26 @@ export function decompile(
   dictionary: Map<number, DictEntry>,
 ): string {
   const signals = value.split(/\s\|?/);
-  const errors = [];
   let tokens: string = "";
   for (let i = 0; i < signals.length; i++) {
     const signal = signals[i];
     if (signal.trim() === "") continue;
-    try {
-      const number = parseInt(signal);
-      let tokenStr = dictionary.get(number)?.def;
-      if (!tokenStr) tokenStr = number.toString();
+    const number = parseInt(signal);
+    if (Number.isNaN(number)) throw new Error(`${signal} is not a number`);
+    let tokenStr = dictionary.get(number)?.def;
+    if (!tokenStr) tokenStr = number.toString();
 
-      tokens += tokenStr;
+    tokens += tokenStr;
 
-      // Separator
-      if (i < signals.length) {
-        tokens += separator(number, parseInt(signals[i + 1]), dictionary);
-      }
-
-      // Double Separator
-      if (i > 0) {
-        tokens += doubleSeparator(parseInt(signals[i - 1]), number, dictionary);
-      }
-    } catch (e) {
-      errors.push(new CompileError(`${signal} is not a number`, 0, 0));
+    // Separator
+    if (i < signals.length) {
+      tokens += separator(number, parseInt(signals[i + 1]), dictionary);
     }
-  }
-  if (errors.length > 0) {
-    throw new MultiCompileError(errors);
+
+    // Double Separator
+    if (i > 0) {
+      tokens += doubleSeparator(parseInt(signals[i - 1]), number, dictionary);
+    }
   }
   return tokens.trim();
 }

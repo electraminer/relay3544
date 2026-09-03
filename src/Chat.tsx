@@ -29,19 +29,23 @@ export function Chat(props: {
   audio: AudioPlayer;
 }) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_MESSAGE_COUNT);
+  const [readCount, setReadCount] = useState(10);
   const containerRef = useRef<HTMLDivElement>(null);
   const restoreScrollRef = useRef<number>(0);
   const pendingBottomRef = useRef(false);
 
   const [readTime, setReadTime] = useState(Date.now());
 
-  const messages = props.messages.getMessagesAndLoadLater(
+  const oldMessages = props.messages.getMessagesAndLoadLater(
     visibleCount,
-    filterByChannel(props.channel),
+    (x) => filterByChannel(props.channel)(x) && x.receivedAt <= readTime,
   );
-  const unread = messages.filter((x) => x.receivedAt > readTime).length;
+  const newMessages = props.messages.getMessagesAndLoadLater(
+    readCount,
+    (x) => filterByChannel(props.channel)(x) && x.receivedAt > readTime,
+  );
 
-  let processed = messages;
+  let processed = [...oldMessages, ...newMessages];
   processed = processChannel(processed, props.channel);
   processed = processCommands(processed);
   processed = processImages(processed);
@@ -64,21 +68,20 @@ export function Chat(props: {
     }
     const restore = restoreScrollRef.current;
     el.scrollTop = el.scrollHeight - restore;
-  }, [messages.length, pendingBottomRef.current]);
+  }, [oldMessages.length, pendingBottomRef.current]);
 
   // Autoscroll to the newest message, but only while no extra history has
   // been lazy-loaded — otherwise a new message would yank the view away
   // from whatever the user scrolled up to read.
   useLayoutEffect(() => {
-    if (isScrolling) {
-      setVisibleCount(visibleCount + 1);
-      return;
-    }
+    setReadCount(newMessages.length + 10);
+    if (isScrolling) return;
     const el = containerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
+    restoreScrollRef.current = 0;
     setIsScrolling(false);
     setReadTime(Date.now());
-  }, [unread, props.messages.version === 0]);
+  }, [newMessages.length, props.messages.version === 0]);
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget;
@@ -91,6 +94,7 @@ export function Chat(props: {
       setVisibleCount((count) => count + LOAD_STEP);
     } else if (!isScrolling && visibleCount > INITIAL_MESSAGE_COUNT) {
       setVisibleCount(INITIAL_MESSAGE_COUNT);
+      restoreScrollRef.current = 0;
     }
   }
 
@@ -121,7 +125,7 @@ export function Chat(props: {
       </div>
       {isScrolling && (
         <button className="scroll-to-bottom" onClick={handleScrollToBottom}>
-          ↓ {unread}
+          ↓ {newMessages.length}
         </button>
       )}
     </div>

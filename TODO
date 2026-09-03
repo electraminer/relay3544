@@ -3,9 +3,7 @@
 ☐ Dictionary signal count
 ☐ Tooltips
 ☐ Font size setting?
-☐ Display word boundaries
 ☐ Indentation formatting
-☐ Fix copying onto all new lines
 ☐ Noscript tag / no webgl tag
 ☐ Music editor
 ☐ Add | formatting to dictionary
@@ -15,6 +13,5 @@
 ☐ spoiler tags / spoiler channels
 ☐ Minor fix on italic formatting
 ☐ Fix clipped signal sound playing
-☐ Improve music somehow
-☐ Display color formatting in message editor
-☐ Add Tab-Switching for alternates
+☐ Improve images
+☐ Add username formatting to input box

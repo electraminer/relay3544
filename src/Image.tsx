@@ -124,7 +124,7 @@ export function ImagePane(props: {
           onClick={() =>
             navigator.clipboard.readText().then((text) => {
               const compiled = compile(text, props.dictionary);
-              const signals = compiled.split(" ").map((x) => parseInt(x));
+              const signals = compiled.map((x) => x.signal ?? 0);
               setImage(Image.fromSignals(signals)![0]);
             })
           }

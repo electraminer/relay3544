@@ -1,6 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import "./Dictionary.css";
 import { Table } from "./Table";
+import { ListInput } from "./ListInput";
 
 const DICT_KEY = "relay-dictionary";
 const SIGFMT_KEY = "relay-signal-fmt";
@@ -8,6 +9,7 @@ const NUMFMT_KEY = "relay-number-fmt";
 
 export type DictEntry = {
   def: string;
+  aliases: string[];
   before: string;
   after: string;
   double: string;
@@ -48,6 +50,7 @@ type EditDictEntry = [
   underline: boolean,
   strikethrough: boolean,
   invert: boolean,
+  aliases: string[],
 ];
 type EditDict = EditDictEntry[];
 
@@ -64,6 +67,7 @@ const DEFAULT_ENTRY: EditDictEntry = [
   false,
   false,
   false,
+  [],
 ];
 
 function fillIncompleteEntry(
@@ -88,6 +92,7 @@ function toDictEntry(def: EditDictEntry): DictEntry {
     underline: def[9],
     strikethrough: def[10],
     invert: def[11],
+    aliases: def[12],
   };
 }
 
@@ -115,9 +120,10 @@ function exportDict(
         underline: Boolean(e[9]),
         strikethrough: Boolean(e[10]),
         invert: Boolean(e[11]),
+        aliases: e[12],
       })),
     },
-    id: 1,
+    id: 2,
 
     beforeUserDefaultMode: toFormatMode(sigFmt[2]),
     afterUserDefaultMode: toFormatMode(sigFmt[3]),
@@ -169,6 +175,7 @@ function importDict(json: string): [EditDict, EditDictEntry, EditDictEntry] {
       imported.descDict?.values?.[i]?.underline ?? false,
       imported.descDict?.values?.[i]?.strikethrough ?? false,
       imported.descDict?.values?.[i]?.invert ?? false,
+      imported.descDict?.values?.[i]?.aliases ?? [],
     ]);
   }
 
@@ -185,6 +192,7 @@ function importDict(json: string): [EditDict, EditDictEntry, EditDictEntry] {
     imported.defaultUnderline ?? false,
     imported.defaultStrikethrough ?? false,
     imported.defaultInvert ?? false,
+    [],
   ] as EditDictEntry;
 
   const numFmt = [
@@ -200,6 +208,7 @@ function importDict(json: string): [EditDict, EditDictEntry, EditDictEntry] {
     imported.numberUnderline ?? false,
     imported.numberStrikethrough ?? false,
     imported.numberInvert ?? false,
+    [],
   ] as EditDictEntry;
 
   return [dict, sigFmt, numFmt];
@@ -213,6 +222,7 @@ export function entryStyle(entry: DictEntry) {
     style["color"] = "var(--color-background)";
   } else {
     style["color"] = entry.color;
+    style["backgroundColor"] = "var(--color-background)";
   }
 
   style.fontWeight = entry.bold ? "bold" : undefined;
@@ -333,7 +343,11 @@ export function Dictionary(props: {
     setNumberFmt(newNumFmt);
   }
 
-  function updateCell(row: number | null, col: number, value: string) {
+  function updateCell<T extends number>(
+    row: number | null,
+    col: T,
+    value: EditDict[number][T],
+  ) {
     return (
       prev: EditDict,
       sigFmt: EditDictEntry,
@@ -750,6 +764,17 @@ export function Dictionary(props: {
               <span className="material-symbols-outlined">invert_colors</span>
             </button>
           </div>
+          <ListInput
+            label="Aliases"
+            value={focusRow[12]}
+            inputClass="dict-editor-format"
+            itemStyle={() => entryStyle(toDictEntry(focusRow))}
+            disabled={!Number.isFinite(focus)}
+            onChange={(items) => {
+              console.log("ListInput change", focusRow[12], "->", items);
+              changeDict(updateCell(focus, 12, items));
+            }}
+          />
           <textarea
             className="dict-editor-notes"
             value={focusRow[5]}

@@ -1,31 +1,51 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  compile,
-  decompile,
-  CompileError,
-  MultiCompileError,
-} from "./converter";
+import { compile, decompile, type PositionedSignal } from "./converter";
 import "./Relay.css";
 import { Chat } from "./Chat";
 import type { Image } from "./spoilers/Image";
-import type { DictEntry } from "./Dictionary";
+import { entryStyle, type DictEntry } from "./Dictionary";
 import type { Relay, useRelaySocket } from "./useRelaySocket";
 import type { AudioPlayer } from "./AudioPlayer";
 
-function renderHighlighted(value: string, errors: CompileError[]): ReactNode {
-  const ranges = errors
-    .filter((e) => e.end > e.start)
-    .sort((a, b) => a.start - b.start);
-  if (ranges.length === 0) return value;
-
+function renderHighlighted(
+  value: string,
+  tokens: PositionedSignal[],
+  dictionary: Map<number, DictEntry>,
+): ReactNode {
+  // The highlight fill is passed as `--mark-bg` rather than `background`, so
+  // Relay.css can paint it as a line-box-sized band instead of a full
+  // font-metrics box (which is taller than line-height, making the fills of
+  // wrapped or stacked highlights overlap).
+  function textSignalStyle(signal: number | null): object {
+    if (signal === null)
+      return {
+        color: "#ff5555",
+        "--mark-bg": "rgba(255, 85, 85, 0.25)",
+      };
+    if (!dictionary.has(signal)) {
+      signal = signal < 0 ? -Infinity : Infinity;
+    }
+    const { backgroundColor, ...rest } = entryStyle(dictionary.get(signal)!);
+    return { ...rest, "--mark-bg": backgroundColor };
+  }
   const parts: ReactNode[] = [];
   let cursor = 0;
-  ranges.forEach((err, i) => {
-    if (err.start > cursor) parts.push(value.slice(cursor, err.start));
-    parts.push(<mark key={i}>{value.slice(err.start, err.end)}</mark>);
-    cursor = Math.max(cursor, err.end);
+  tokens.forEach((tok, i) => {
+    if (cursor < tok.start)
+      parts.push(<span>{value.slice(cursor, tok.start)}</span>);
+    parts.push(
+      <mark
+        key={i}
+        className={`mark--parity-${i % 2}`}
+        style={textSignalStyle(tok.signal)}
+      >
+        {value.slice(tok.start, tok.end)}
+      </mark>,
+    );
+    cursor = Math.max(cursor, tok.end);
   });
-  if (cursor < value.length) parts.push(value.slice(cursor));
+  if (cursor < value.length)
+    parts.push(<span>{value.slice(cursor) + " "}</span>);
   return parts;
 }
 
@@ -37,12 +57,13 @@ export function EditorPane(props: {
   const { dictionary, onSend, status } = props;
 
   const [value, setValue] = useState("");
-  const [compiled, setCompiled] = useState("");
-  const [importErrors, setImportErrors] = useState<CompileError[]>([]);
-  const [importSuccess, setImportSuccess] = useState<CompileError[]>([]);
-  const [compileErrors, setCompileErrors] = useState<CompileError[]>([]);
+  const [compiled, setCompiled] = useState<PositionedSignal[]>([]);
+  const [importError, setImportError] = useState<string>("");
+  const [importSuccess, setImportSuccess] = useState<string>("");
   const backdropRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const errors = compiled.filter((x) => x.signal === null);
 
   function syncScroll() {
     if (backdropRef.current && textareaRef.current) {
@@ -53,16 +74,9 @@ export function EditorPane(props: {
 
   function handleChange(next: string) {
     setValue(next);
-    setImportErrors([]);
-    setImportSuccess([]);
-    setCompileErrors([]);
-    try {
-      setCompiled(compile(next, dictionary));
-    } catch (e) {
-      setCompileErrors(
-        e instanceof MultiCompileError ? e.errors : [e as CompileError],
-      );
-    }
+    setImportError("");
+    setImportSuccess("");
+    setCompiled(compile(next, dictionary));
   }
 
   useEffect(() => {
@@ -74,38 +88,40 @@ export function EditorPane(props: {
     try {
       clipboardText = await navigator.clipboard.readText();
     } catch {
-      setImportErrors([new CompileError("Could not read clipboard", 0, 0)]);
-      setImportSuccess([]);
+      setImportError("Could not read clipboard");
+      setImportSuccess("");
       return;
     }
 
     try {
       const compiled = compile(clipboardText, dictionary);
-      const next = decompile(compiled, dictionary);
+      const compStr = compiled.map((x) => x.signal).join(" ");
+      const next = decompile(compStr, dictionary);
       handleChange(next);
-      setImportErrors([]);
-      setImportSuccess([new CompileError("Imported!", 0, 0)]);
+      setImportError("");
+      setImportSuccess("Imported!");
     } catch (e) {
-      setImportErrors(
-        e instanceof MultiCompileError ? e.errors : [e as CompileError],
-      );
+      setImportError(String(e));
     }
   }
 
   async function handleExport() {
     try {
-      await navigator.clipboard.writeText(compiled);
-      setImportErrors([]);
-      setImportSuccess([new CompileError("Exported!", 0, 0)]);
+      await navigator.clipboard.writeText(
+        compiled.map((x) => x.signal).join(" "),
+      );
+      setImportError("");
+      setImportSuccess("Exported!");
     } catch {
-      setImportErrors([new CompileError("Could not write to clipboard", 0, 0)]);
-      setImportSuccess([]);
+      setImportError("Could not write to clipboard");
+      setImportSuccess("");
     }
   }
 
   function handleSend() {
-    if (compileErrors.length > 0 || compiled.length === 0) return;
-    onSend(compiled.split(" ").map((x) => parseInt(x)));
+    if (errors.length > 0 || compiled.length === 0) return;
+    // This ! is okay because we just verified that errors is empty
+    onSend(compiled.map((x) => x.signal!));
     handleChange("");
   }
 
@@ -125,16 +141,14 @@ export function EditorPane(props: {
           →Import
         </button>
         <button
-          disabled={compileErrors.length > 0 || status !== "readwrite"}
+          disabled={errors.length > 0 || status !== "readwrite"}
           onClick={handleExport}
         >
           Export→
         </button>
         <button
           disabled={
-            compileErrors.length > 0 ||
-            compiled.length === 0 ||
-            status !== "readwrite"
+            errors.length > 0 || compiled.length === 0 || status !== "readwrite"
           }
           onClick={handleSend}
         >
@@ -145,14 +159,14 @@ export function EditorPane(props: {
         <div className="textbox">
           <div className="backdrop" ref={backdropRef}>
             <div className="highlights">
-              {renderHighlighted(value, compileErrors)}
+              {renderHighlighted(value, compiled, dictionary)}
             </div>
           </div>
           <textarea
             ref={textareaRef}
             spellCheck={false}
             autoComplete="off"
-            className={compileErrors.length > 0 ? "invalid" : ""}
+            className={errors.length > 0 ? "invalid" : ""}
             value={
               status === "readwrite"
                 ? value
@@ -166,18 +180,14 @@ export function EditorPane(props: {
             disabled={status !== "readwrite"}
           />
         </div>
-        {importErrors.length > 0 && (
+        {importError.length > 0 && (
           <div className="importerr-bar">
-            {importErrors.map((err, i) => (
-              <div key={i}>{err.message}</div>
-            ))}
+            <div>{importError}</div>
           </div>
         )}
-        {importSuccess.length > 0 && (
+        {importSuccess && (
           <div className="importsucc-bar">
-            {importSuccess.map((err, i) => (
-              <div key={i}>{err.message}</div>
-            ))}
+            <div>{importSuccess}</div>
           </div>
         )}
       </div>

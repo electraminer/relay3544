@@ -1,0 +1,24 @@
+.list-input {
+  .list-input-item-idx {
+    color: var(--color-grayed);
+    text-align: right;
+    padding-right: 4px;
+  }
+
+  .list-input-chip {
+    display: flex;
+  }
+
+  .list-input-chip-label {
+    font-family: var(--font-main);
+  }
+
+  .list-input-chip-value {
+    min-width: 0;
+    width: fit-content;
+    font-family: var(--font-main);
+    font-size: var(--font-size-small);
+    background: var(--color-background);
+    border: 1px solid var(--color-grayed);
+  }
+}
