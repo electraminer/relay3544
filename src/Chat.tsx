@@ -242,17 +242,20 @@ export function Sender(props: {
     <span
       className="sender"
       onClick={() => props.audio.forcePlay(Song.senderSong(props.sender))}
-      style={(() => {
-        const code = [...senderCode].map((x) => parseInt(x));
-        return {
-          backgroundColor: `rgb(${code[1] * 2 * (7 - code[0])}, ${code[2] * 2 * (7 - code[0])}, ${code[3] * 2 * (7 - code[0])}`,
-          color: `rgb(${code[1] * 24 + 64}, ${code[2] * 16 + 64}, ${code[3] * 24 + 64})`,
-        };
-      })()}
+      style={usernameStyle(props.sender)}
     >
       {props.dictionary.get(props.sender)?.def ?? (props.pad ? senderCode : props.sender)}
     </span>
   );
+}
+
+export function usernameStyle(username: number) {
+  let padUser = username.toString().padStart(4, "0");
+  const code = [...padUser].map((x) => parseInt(x));
+  return {
+    backgroundColor: `rgb(${code[1] * 2 * (7 - code[0])}, ${code[2] * 2 * (7 - code[0])}, ${code[3] * 2 * (7 - code[0])}`,
+    color: `rgb(${code[1] * 24 + 64}, ${code[2] * 16 + 64}, ${code[3] * 24 + 64})`,
+  };
 }
 
 export function Text(props: {

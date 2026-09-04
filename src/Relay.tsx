@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { compile, decompile, type PositionedSignal } from "./converter";
 import "./Relay.css";
-import { Chat } from "./Chat";
+import { Chat, usernameStyle } from "./Chat";
 import type { Image } from "./spoilers/Image";
 import { entryStyle, type DictEntry } from "./Dictionary";
 import type { Relay, useRelaySocket } from "./useRelaySocket";
@@ -11,6 +11,7 @@ function renderHighlighted(
   value: string,
   tokens: PositionedSignal[],
   dictionary: Map<number, DictEntry>,
+  online: Set<number>,
 ): ReactNode {
   // The highlight fill is passed as `--mark-bg` rather than `background`, so
   // Relay.css can paint it as a line-box-sized band instead of a full
@@ -28,6 +29,7 @@ function renderHighlighted(
     const { backgroundColor, ...rest } = entryStyle(dictionary.get(signal)!);
     return { ...rest, "--mark-bg": backgroundColor };
   }
+
   const parts: ReactNode[] = [];
   let cursor = 0;
   tokens.forEach((tok, i) => {
@@ -37,7 +39,8 @@ function renderHighlighted(
       <mark
         key={i}
         className={`mark--parity-${i % 2}`}
-        style={textSignalStyle(tok.signal)}
+        style={online.has(tok.signal ?? -1)
+          ? usernameStyle(tok.signal ?? -1) : textSignalStyle(tok.signal)}
       >
         {value.slice(tok.start, tok.end)}
       </mark>,
@@ -53,6 +56,7 @@ export function EditorPane(props: {
   dictionary: Map<number, DictEntry>;
   onSend: (msg: number[]) => void;
   status: string;
+  online: Set<number>;
 }) {
   const { dictionary, onSend, status } = props;
 
@@ -159,7 +163,7 @@ export function EditorPane(props: {
         <div className="textbox">
           <div className="backdrop" ref={backdropRef}>
             <div className="highlights">
-              {renderHighlighted(value, compiled, dictionary)}
+              {renderHighlighted(value, compiled, dictionary, props.online)}
             </div>
           </div>
           <textarea
@@ -247,6 +251,7 @@ export function RelayPane(props: {
         dictionary={props.dictionary}
         onSend={(msg) => props.onSend(msg, props.channel)}
         status={props.relay.status}
+        online={new Set(props.relay.online)}
       />
     </div>
   );
