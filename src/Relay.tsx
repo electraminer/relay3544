@@ -39,8 +39,11 @@ function renderHighlighted(
       <mark
         key={i}
         className={`mark--parity-${i % 2}`}
-        style={online.has(tok.signal ?? -1)
-          ? usernameStyle(tok.signal ?? -1) : textSignalStyle(tok.signal)}
+        style={
+          online.has(tok.signal ?? -1)
+            ? usernameStyle(tok.signal ?? -1)
+            : textSignalStyle(tok.signal)
+        }
       >
         {value.slice(tok.start, tok.end)}
       </mark>,

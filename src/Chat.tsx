@@ -244,7 +244,8 @@ export function Sender(props: {
       onClick={() => props.audio.forcePlay(Song.senderSong(props.sender))}
       style={usernameStyle(props.sender)}
     >
-      {props.dictionary.get(props.sender)?.def ?? (props.pad ? senderCode : props.sender)}
+      {props.dictionary.get(props.sender)?.def ??
+        (props.pad ? senderCode : props.sender)}
     </span>
   );
 }

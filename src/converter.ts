@@ -24,7 +24,8 @@ export function tokenize(
     if (value.charAt(i) === "0") {
       // Deal with leading zeros
       signalsAtChar[i + 1] ??= [
-        ...signals, { signal: 0, start: i, end: i + 1 },
+        ...signals,
+        { signal: 0, start: i, end: i + 1 },
       ];
     } else {
       const match = value.substring(i).match(/^\|?(-?[0-9]+)/);
