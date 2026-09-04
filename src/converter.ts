@@ -21,17 +21,24 @@ export function tokenize(
     bestSignals = signals;
 
     // Parse numbers
-    const match = value.substring(i).match(/^\|?(-?[0-9]+)/);
-    if (match !== null) {
-      const signal = parseFloat(match[1]);
-      signalsAtChar[i + match[0].length] ??= [
-        ...signals,
-        {
-          signal,
-          start: i,
-          end: i + match[0].length,
-        },
+    if (value.charAt(i) === "0") {
+      // Deal with leading zeros
+      signalsAtChar[i + 1] ??= [
+        ...signals, { signal: 0, start: i, end: i + 1 },
       ];
+    } else {
+      const match = value.substring(i).match(/^\|?(-?[0-9]+)/);
+      if (match !== null) {
+        const signal = parseFloat(match[1]);
+        signalsAtChar[i + match[0].length] ??= [
+          ...signals,
+          {
+            signal,
+            start: i,
+            end: i + match[0].length,
+          },
+        ];
+      }
     }
 
     if (value.charAt(i) && value.charAt(i).trim() === "") {
