@@ -161,6 +161,7 @@ export function Message(props: {
         tooltip={props.message.sender}
       >
         <Sender
+          pad
           audio={props.audio}
           sender={props.message.sender}
           dictionary={props.dictionary}
@@ -234,8 +235,9 @@ export function Sender(props: {
   sender: number;
   dictionary: Map<number, DictEntry>;
   audio: AudioPlayer;
+  pad?: boolean;
 }): React.ReactNode {
-  const senderCode = props.sender.toString().padStart(4, "0");
+  let senderCode = props.sender.toString().padStart(4, "0");
   return (
     <span
       className="sender"
@@ -248,7 +250,7 @@ export function Sender(props: {
         };
       })()}
     >
-      {props.dictionary.get(props.sender)?.def ?? senderCode}
+      {props.dictionary.get(props.sender)?.def ?? (props.pad ? senderCode : props.sender)}
     </span>
   );
 }
@@ -279,7 +281,7 @@ export function Text(props: {
             }}
             tooltip={signal}
           >
-            {props.online.has(signal) && signal >= 10 ? (
+            {props.online.has(signal) ? (
               <Sender
                 audio={props.audio}
                 sender={signal}
